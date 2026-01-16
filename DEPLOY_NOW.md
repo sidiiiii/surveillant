@@ -1,126 +1,172 @@
-# 🚀 Guide de Déploiement Rapide
+# 🚀 Guide de Déploiement Rapide - Surveilleur
 
-## Étape 1: Créer la Base de Données PostgreSQL sur Render
+## ✅ Étape 1 : Pousser les nouveaux fichiers sur GitHub
 
-1. Allez sur https://render.com
-2. Créez un compte (gratuit)
-3. Cliquez sur "New +" → "PostgreSQL"
-4. Configurez:
-   - Name: `surveilleur-db`
-   - Database: `surveilleur`
-   - User: (laissez par défaut)
-   - Region: Frankfurt (ou la plus proche)
-   - Plan: **Free**
-5. Cliquez sur "Create Database"
-6. **IMPORTANT**: Copiez l'"Internal Database URL" (vous en aurez besoin)
+Ouvrez un **nouveau PowerShell** et exécutez :
+
+```powershell
+cd c:\Users\sidy\Desktop\School
+git add .
+git commit -m "Add deployment configuration files"
+git push origin main
+```
 
 ---
 
-## Étape 2: Déployer le Backend sur Render
+## 🗄️ Étape 2 : Créer la Base de Données sur Render
 
-1. Sur Render, cliquez sur "New +" → "Web Service"
-2. Connectez votre GitHub ou utilisez "Public Git Repository"
-3. Configurez:
-   - **Name**: `surveilleur-api`
-   - **Region**: Frankfurt (même que la DB)
-   - **Root Directory**: `server`
-   - **Runtime**: Node
-   - **Build Command**: `npm install`
-   - **Start Command**: `npm start`
-   - **Plan**: Free
+### A. Créer un compte Render
+1. Allez sur https://dashboard.render.com/register
+2. Inscrivez-vous avec GitHub (recommandé) ou email
+3. Vérifiez votre email si nécessaire
 
-4. **Variables d'environnement** (très important!):
-   ```
-   NODE_ENV=production
-   PORT=3000
-   JWT_SECRET=changez_ce_secret_par_quelque_chose_de_tres_securise
-   DATABASE_URL=[Collez l'Internal Database URL de l'étape 1]
-   SMTP_HOST=smtp.gmail.com
-   SMTP_PORT=587
-   SMTP_USER=abdelkadermed06@gmail.com
-   SMTP_PASS=ynzx hobh ifix anni
-   ```
-
-5. Cliquez sur "Create Web Service"
-6. Attendez 5-10 minutes
-7. **Copiez l'URL de votre API** (ex: `https://surveilleur-api.onrender.com`)
+### B. Créer la base de données PostgreSQL
+1. Dans le dashboard Render, cliquez sur **"New +"** → **"PostgreSQL"**
+2. Remplissez les informations :
+   - **Name** : `surveilleur-db`
+   - **Database** : `surveilleur`
+   - **User** : `surveilleur`
+   - **Region** : Choisissez le plus proche (ex: Frankfurt)
+   - **Plan** : **Free** (gratuit)
+3. Cliquez sur **"Create Database"**
+4. ⏳ Attendez 2-3 minutes que la base soit créée
+5. **📋 COPIEZ** l'URL "Internal Database URL" (commence par `postgresql://`)
 
 ---
 
-## Étape 3: Déployer le Frontend sur Vercel
+## 🖥️ Étape 3 : Déployer le Backend sur Render
 
-1. Allez sur https://vercel.com
-2. Créez un compte (gratuit)
-3. Cliquez sur "Add New..." → "Project"
-4. Importez votre repository GitHub
-5. Configurez:
-   - **Framework Preset**: Vite
-   - **Root Directory**: `client`
-   - **Build Command**: `npm run build`
-   - **Output Directory**: `dist`
+### A. Créer le service web
+1. Dans Render, cliquez sur **"New +"** → **"Web Service"**
+2. Connectez votre repository GitHub `surveilleur`
+3. Remplissez les informations :
 
-6. **Variable d'environnement**:
-   ```
-   VITE_API_URL=https://surveilleur-api.onrender.com/api
-   ```
-   ⚠️ Remplacez par votre vraie URL Render (de l'étape 2)
+| Champ | Valeur |
+|-------|--------|
+| **Name** | `surveilleur-backend` |
+| **Region** | Même que la base de données |
+| **Branch** | `main` |
+| **Root Directory** | `server` |
+| **Runtime** | `Node` |
+| **Build Command** | `npm install` |
+| **Start Command** | `npm start` |
+| **Plan** | **Free** |
 
-7. Cliquez sur "Deploy"
-8. Attendez 2-5 minutes
-9. **Copiez l'URL de votre site** (ex: `https://surveilleur.vercel.app`)
+### B. Configurer les variables d'environnement
 
----
+Cliquez sur **"Advanced"** puis ajoutez ces variables :
 
-## Étape 4: Configurer CORS
+| Key | Value |
+|-----|-------|
+| `NODE_ENV` | `production` |
+| `DATABASE_URL` | Collez l'URL copiée à l'étape 2 |
+| `JWT_SECRET` | Générez une clé aléatoire (ex: `surveilleur2026secret`) |
+| `PORT` | `10000` |
+| `FRONTEND_URL` | Laissez vide pour l'instant (on l'ajoutera après) |
 
-1. Retournez sur Render (votre backend)
-2. Allez dans "Environment"
-3. Ajoutez cette variable:
-   ```
-   FRONTEND_URL=https://surveilleur.vercel.app
-   ```
-   ⚠️ Remplacez par votre vraie URL Vercel (de l'étape 3)
-
-4. Cliquez sur "Save Changes"
-5. Le service va redémarrer automatiquement
+4. Cliquez sur **"Create Web Service"**
+5. ⏳ Attendez 5-10 minutes que le déploiement se termine
+6. **📋 COPIEZ** l'URL du backend (ex: `https://surveilleur-backend.onrender.com`)
 
 ---
 
-## ✅ C'est Terminé !
+## 🌐 Étape 4 : Déployer le Frontend sur Vercel
 
-Visitez votre URL Vercel et testez votre application !
+### A. Créer un compte Vercel
+1. Allez sur https://vercel.com/signup
+2. Inscrivez-vous avec GitHub (recommandé)
+3. Autorisez Vercel à accéder à vos repositories
 
-### 🔍 Vérifications:
-- [ ] Je peux accéder à la page d'accueil
-- [ ] Je peux me connecter avec un compte admin
-- [ ] Je peux créer un élève
-- [ ] Les emails partent correctement
+### B. Importer le projet
+1. Cliquez sur **"Add New..."** → **"Project"**
+2. Sélectionnez votre repository `surveilleur`
+3. Configurez le projet :
 
----
+| Champ | Valeur |
+|-------|--------|
+| **Framework Preset** | `Vite` |
+| **Root Directory** | `client` |
+| **Build Command** | `npm run build` |
+| **Output Directory** | `dist` |
 
-## ⚠️ Important à Savoir
+### C. Ajouter les variables d'environnement
 
-- **Plan Gratuit Render**: Le serveur s'endort après 15 min d'inactivité
-  - La première requête après le sommeil prendra 30-60 secondes
-  - C'est normal et gratuit !
+Dans **"Environment Variables"**, ajoutez :
 
-- **Logs**: En cas de problème, consultez les logs sur Render et Vercel
+| Name | Value |
+|------|-------|
+| `VITE_API_URL` | L'URL du backend Render (ex: `https://surveilleur-backend.onrender.com`) |
 
----
-
-## 🆘 Problèmes Courants
-
-### "Failed to fetch" ou erreur CORS
-→ Vérifiez que `FRONTEND_URL` est bien configuré sur Render
-
-### "Database connection failed"
-→ Vérifiez que `DATABASE_URL` est correct sur Render
-
-### Les emails ne partent pas
-→ Vérifiez `SMTP_USER` et `SMTP_PASS` sur Render
+4. Cliquez sur **"Deploy"**
+5. ⏳ Attendez 3-5 minutes
+6. **📋 COPIEZ** l'URL du frontend (ex: `https://surveilleur.vercel.app`)
 
 ---
 
-## 📞 Besoin d'aide ?
+## 🔄 Étape 5 : Finaliser la Configuration CORS
 
-Email: ssurveilleur@gmail.com
+### Retournez sur Render (backend)
+1. Allez dans votre service `surveilleur-backend`
+2. Cliquez sur **"Environment"**
+3. Modifiez la variable `FRONTEND_URL` :
+   - **Value** : L'URL Vercel (ex: `https://surveilleur.vercel.app`)
+4. Cliquez sur **"Save Changes"**
+5. Le service va redémarrer automatiquement (1-2 minutes)
+
+---
+
+## ✅ Étape 6 : Tester l'Application
+
+1. Ouvrez l'URL Vercel dans votre navigateur
+2. Créez une nouvelle école
+3. Connectez-vous
+4. Testez les fonctionnalités
+
+---
+
+## 🎉 Félicitations !
+
+Votre application est maintenant en ligne ! 🚀
+
+### 📱 URLs de votre application :
+- **Frontend** : `https://surveilleur.vercel.app` (ou votre URL Vercel)
+- **Backend API** : `https://surveilleur-backend.onrender.com` (ou votre URL Render)
+
+---
+
+## ⚠️ Limitations du Plan Gratuit
+
+### Render (Backend)
+- ⏸️ Le serveur s'endort après 15 minutes d'inactivité
+- 🐌 Premier chargement lent (30-60 secondes) après inactivité
+- 💾 Base de données limitée à 1 GB
+- 🔄 Supprimée après 90 jours d'inactivité
+
+### Vercel (Frontend)
+- ✅ Toujours actif et rapide
+- 📊 100 GB de bande passante/mois
+- 🚀 Déploiement automatique à chaque push GitHub
+
+---
+
+## 🔧 Dépannage
+
+### Le backend ne démarre pas
+- Vérifiez que `DATABASE_URL` est correctement configuré
+- Regardez les logs dans Render : **Logs** → **Deploy Logs**
+
+### Erreur CORS
+- Vérifiez que `FRONTEND_URL` dans Render correspond exactement à l'URL Vercel
+- Pas de `/` à la fin de l'URL
+
+### Le frontend ne se connecte pas au backend
+- Vérifiez que `VITE_API_URL` dans Vercel est correct
+- Testez l'API directement : `https://votre-backend.onrender.com/`
+
+---
+
+## 📞 Support
+
+Pour toute question, consultez :
+- [Documentation Render](https://render.com/docs)
+- [Documentation Vercel](https://vercel.com/docs)
