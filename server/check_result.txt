@@ -1,0 +1,58 @@
+﻿
+=== CHECKING STUDENTS ===
+
+
+--- Student 1 ---
+ID: 1
+Name: Alice Student
+Parent ID: 3
+Parent Email (field): parent@school.com
+Linked Parent Account: John Parent
+Linked Parent Email: parent@school.com
+Ô£à WILL RECEIVE EMAIL at: parent@school.com
+
+--- Student 2 ---
+ID: 2
+Name: ali
+Parent ID: 4
+Parent Email (field): abdelkadermed23@gmail.com
+Linked Parent Account: Parent of ali
+Linked Parent Email: abdelkadermed23@gmail.com
+Ô£à WILL RECEIVE EMAIL at: abdelkadermed23@gmail.com
+
+--- Student 3 ---
+ID: 3
+Name: Mana
+Parent ID: 5
+Parent Email (field): elwevacommerce@gmail.com
+Linked Parent Account: Parent of Mana
+Linked Parent Email: elwevacommerce@gmail.com
+Ô£à WILL RECEIVE EMAIL at: elwevacommerce@gmail.com
+
+--- Student 4 ---
+ID: 4
+Name: Mohamed ali
+Parent ID: 5
+Parent Email (field): elwevacommerce@gmail.com
+Linked Parent Account: Parent of Mana
+Linked Parent Email: elwevacommerce@gmail.com
+Ô£à WILL RECEIVE EMAIL at: elwevacommerce@gmail.com
+
+--- Student 5 ---
+ID: 5
+Name: Mohamed mohamed
+Parent ID: 5
+Parent Email (field): elwevacommerce@gmail.com
+Linked Parent Account: Parent of Mana
+Linked Parent Email: elwevacommerce@gmail.com
+Ô£à WILL RECEIVE EMAIL at: elwevacommerce@gmail.com
+
+
+=== SOLUTION ===
+
+Si aucun email ne peut ├¬tre envoy├®, voici les solutions:
+1. Cr├®er un compte parent (Register Parent)
+2. Le parent doit lier son compte ├á l'├®l├¿ve (Link Student avec School Code + Matricule)
+OU
+3. S'assurer que l'├®l├¿ve a un parent_email renseign├® lors de sa cr├®ation
+
