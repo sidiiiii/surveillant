@@ -11,8 +11,27 @@ const PORT = process.env.PORT || 3000;
 const path = require('path');
 
 // CORS Configuration for Production
+// Smart CORS Configuration
 const corsOptions = {
-    origin: process.env.FRONTEND_URL || '*',
+    origin: function (origin, callback) {
+        // Allow requests with no origin (like mobile apps or curl requests)
+        if (!origin) return callback(null, true);
+
+        // Allow localhost for development
+        if (origin.includes('localhost')) return callback(null, true);
+
+        // Allow any Vercel deployment
+        if (origin.endsWith('.vercel.app')) return callback(null, true);
+
+        // Allow the specific FRONTEND_URL if set
+        if (process.env.FRONTEND_URL && origin === process.env.FRONTEND_URL) {
+            return callback(null, true);
+        }
+
+        // Block others by default (or allow if you want to be very permissive: callback(null, true))
+        console.log('CORS Blocked:', origin);
+        callback(new Error('Not allowed by CORS'));
+    },
     credentials: true,
     optionsSuccessStatus: 200
 };
