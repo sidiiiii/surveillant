@@ -1,6 +1,9 @@
-const apiUrl = import.meta.env.VITE_API_URL;
-console.log('DEBUG CONFIG - VITE_API_URL:', apiUrl);
-console.log('DEBUG CONFIG - MODE:', import.meta.env.MODE);
+const envUrl = import.meta.env.VITE_API_URL;
+// Ajoute automatiquement "/api" s'il manque
+const finalUrl = envUrl
+    ? (envUrl.endsWith('/api') ? envUrl : `${envUrl}/api`)
+    : 'http://localhost:3000/api';
 
-export const API_URL = apiUrl || 'http://localhost:3000/api';
-console.log('DEBUG CONFIG - FINAL API_URL:', API_URL);
+export const API_URL = finalUrl;
+
+console.log('✅ API Configured:', API_URL);
