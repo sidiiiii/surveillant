@@ -27,7 +27,7 @@ const Login = () => {
             localStorage.setItem('token', token);
             localStorage.setItem('user', JSON.stringify(user));
 
-            if (user.is_superadmin) {
+            if (user.is_superadmin || user.role === 'super_admin') {
                 navigate('/superadmin');
             } else if (user.role === 'admin' || user.role === 'teacher') {
                 navigate('/admin');

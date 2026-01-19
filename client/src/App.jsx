@@ -21,7 +21,7 @@ const ProtectedRoute = ({ children, role }) => {
   if (!token) return <Navigate to="/login" />;
 
   // Superadmin can access anything
-  if (user.is_superadmin) return children;
+  if (user.is_superadmin || user.role === 'super_admin') return children;
 
   if (role && user.role !== role && user.role !== 'admin') {
     return <Navigate to="/login" />;
