@@ -49,8 +49,8 @@ app.use('/api/analysis', require('./routes/analysis'));
 const frontendBuildPath = path.join(process.cwd(), 'public');
 if (IS_PRODUCTION && fs.existsSync(frontendBuildPath)) {
     app.use(express.static(frontendBuildPath));
-    // Catch-all: serve index.html for React Router
-    app.get('*', (req, res) => {
+    // Catch-all: serve index.html for React Router (Express 5 syntax)
+    app.get('/{*splat}', (req, res) => {
         res.sendFile(path.join(frontendBuildPath, 'index.html'));
     });
 } else {
