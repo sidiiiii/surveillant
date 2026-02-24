@@ -1,0 +1,13 @@
+{
+    "name": "surveillant",
+    "version": "1.0.0",
+    "description": "Plateforme de surveillance scolaire",
+    "scripts": {
+        "build": "cd client && npm install && npm run build && cd .. && cp -r client/dist server/public",
+        "start": "cd server && node src/index.js",
+        "install-all": "cd client && npm install && cd ../server && npm install"
+    },
+    "engines": {
+        "node": ">=18.0.0"
+    }
+}
