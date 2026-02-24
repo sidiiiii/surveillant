@@ -2,8 +2,9 @@ const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const crypto = require('crypto');
 const db = require('../database');
-const { JWT_SECRET } = require('../middleware/authMiddleware');
+const { JWT_SECRET, authenticateToken } = require('../middleware/authMiddleware');
 
 // Login Route
 router.post('/login', async (req, res) => {
@@ -96,7 +97,7 @@ router.post('/register-school', upload.single('logo'), async (req, res) => {
         }
 
         // Generate Unique Code
-        const code = `SCH-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
+        const code = `SCH-${crypto.randomBytes(3).toString('hex').toUpperCase()}`;
 
         // Get logo URL if uploaded
         const logo_url = req.file ? `/uploads/schools/${req.file.filename}` : null;
@@ -124,15 +125,15 @@ router.post('/register-school', upload.single('logo'), async (req, res) => {
     }
 });
 
-// Link Student (Parent only) - Using NNI
+// Link Student (Parent only) - Using NSI
 router.post('/link-student', async (req, res) => {
     // Expects Authorization header with token
     const token = req.headers.authorization?.split(' ')[1];
     if (!token) return res.status(401).json({ error: 'No token provided' });
 
-    const { schoolCode, nni } = req.body;
-    if (!schoolCode || !nni) {
-        return res.status(400).json({ error: 'Code École et NNI sont requis' });
+    const { schoolCode, nsi } = req.body;
+    if (!schoolCode || !nsi) {
+        return res.status(400).json({ error: 'Code École et NSI sont requis' });
     }
 
     try {
@@ -151,10 +152,10 @@ router.post('/link-student', async (req, res) => {
             return res.status(403).json({ error: 'Cette école est actuellement suspendue.' });
         }
 
-        const { rows: studentRows } = await db.query('SELECT id, parent_id, name FROM students WHERE school_id = $1 AND nni = $2', [school.id, nni]);
+        const { rows: studentRows } = await db.query('SELECT id, parent_id, name FROM students WHERE school_id = $1 AND nsi = $2', [school.id, nsi]);
         const student = studentRows[0];
         if (!student) {
-            return res.status(404).json({ error: 'Aucun élève trouvé avec ce NNI dans cette école' });
+            return res.status(404).json({ error: 'Aucun élève trouvé avec ce NSI dans cette école' });
         }
 
         // Optional: Check if already linked
@@ -164,7 +165,7 @@ router.post('/link-student', async (req, res) => {
 
         await db.query('UPDATE students SET parent_id = $1 WHERE id = $2', [decoded.id, student.id]);
 
-        console.log(`[Auth] ✅ Parent ${decoded.email} linked to student ${student.name} (NNI: ${nni})`);
+        console.log(`[Auth] ✅ Parent ${decoded.email} linked to student ${student.name} (NSI: ${nsi})`);
 
         res.json({ success: true, message: 'Élève lié avec succès', studentName: student.name });
 
@@ -204,4 +205,79 @@ router.post('/register-parent', async (req, res) => {
     }
 });
 
+// Update Profile (Email and/or Password)
+router.put('/update-profile', authenticateToken, async (req, res) => {
+    const { email, password, name, currentPassword } = req.body;
+    const userId = req.user.id;
+
+    try {
+        // 1. Verify current password first for security
+        if (password || email) {
+            if (!currentPassword) {
+                return res.status(400).json({ error: 'Le mot de passe actuel est requis pour changer l\'email ou le mot de passe.' });
+            }
+
+            const { rows: userRows } = await db.query('SELECT password FROM users WHERE id = $1', [userId]);
+            const user = userRows[0];
+
+            const validPassword = await bcrypt.compare(currentPassword, user.password);
+            if (!validPassword) {
+                return res.status(401).json({ error: 'Mot de passe actuel incorrect.' });
+            }
+        }
+
+        let updateFields = [];
+        let queryParams = [];
+        let counter = 1;
+
+        if (email) {
+            const trimmedEmail = email.trim();
+            // Check if email already exists for another user
+            const { rows: existingUser } = await db.query('SELECT id FROM users WHERE LOWER(email) = LOWER($1) AND id != $2', [trimmedEmail, userId]);
+            if (existingUser.length > 0) {
+                return res.status(400).json({ error: 'Cet email est déjà utilisé par un autre compte.' });
+            }
+            updateFields.push(`email = $${counter++}`);
+            queryParams.push(trimmedEmail);
+        }
+
+        if (password) {
+            const hash = await bcrypt.hash(password, 10);
+            updateFields.push(`password = $${counter++}`);
+            queryParams.push(hash);
+        }
+
+        if (name) {
+            updateFields.push(`name = $${counter++}`);
+            queryParams.push(name);
+        }
+
+        if (updateFields.length === 0) {
+            return res.status(400).json({ error: 'Aucun champ à mettre à jour.' });
+        }
+
+        queryParams.push(userId);
+        const query = `UPDATE users SET ${updateFields.join(', ')} WHERE id = $${counter} RETURNING id, name, email, role, school_id`;
+        const { rows } = await db.query(query, queryParams);
+
+        console.log(`[Auth] Profile updated for user ${userId}`);
+
+        res.json({
+            success: true,
+            user: {
+                id: rows[0].id,
+                name: rows[0].name,
+                email: rows[0].email,
+                role: rows[0].role,
+                school_id: rows[0].school_id
+            },
+            message: 'Profil mis à jour avec succès.'
+        });
+    } catch (error) {
+        console.error('Update profile error:', error);
+        res.status(500).json({ error: 'Erreur lors de la mise à jour du profil.' });
+    }
+});
+
 module.exports = router;
+

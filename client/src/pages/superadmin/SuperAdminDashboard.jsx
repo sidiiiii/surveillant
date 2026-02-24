@@ -1,8 +1,73 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { API_URL } from '../../config';
-import { useNavigate } from 'react-router-dom';
-import SurveilleurLogo from '../../assets/Surveilleur.jpeg';
+import { useNavigate }
+    from 'react-router-dom';
+import SurveillantLogo from '../../assets/Surveillant.jpeg';
+
+const SubscriptionTimer = ({ endDate, isPaused, remainingMs }) => {
+    const [timeLeft, setTimeLeft] = useState('');
+
+    useEffect(() => {
+        const calculateTimeLeft = () => {
+            if (isPaused) {
+                const totalMinutes = Math.floor(parseInt(remainingMs || 0) / (1000 * 60));
+                return `⏸️ PAUSE (${formatMinutes(totalMinutes)})`;
+            }
+            if (!endDate) return "⏳ Non défini";
+            const end = new Date(endDate);
+            const now = new Date();
+            const diff = end - now;
+
+            if (diff <= 0) return "❌ Expiré";
+
+            const totalMinutes = Math.floor(diff / (1000 * 60));
+            return formatMinutes(totalMinutes);
+        };
+
+        const formatMinutes = (totalMinutes) => {
+            const minutes = totalMinutes % 60;
+            const hours = Math.floor((totalMinutes / 60) % 24);
+            const days = Math.floor((totalMinutes / (60 * 24)) % 30);
+            const months = Math.floor(totalMinutes / (60 * 24 * 30));
+
+            const parts = [];
+            if (months > 0) parts.push(`${months}m`);
+            if (days > 0 || months > 0) parts.push(`${days}j`);
+            if (hours > 0 || days > 0 || months > 0) parts.push(`${hours}h`);
+            parts.push(`${minutes}min`);
+
+            return parts.join(' ');
+        };
+
+        const updateTimer = () => setTimeLeft(calculateTimeLeft());
+        updateTimer();
+        const interval = setInterval(updateTimer, 60000); // Mettre à jour chaque minute
+
+        return () => clearInterval(interval);
+    }, [endDate, isPaused, remainingMs]);
+
+    const isExpired = timeLeft.includes('Expiré');
+    const isPausedDisplay = timeLeft.includes('⏸️');
+    const isWarning = !isPausedDisplay && (timeLeft.match(/^[0-4]j/) || timeLeft.match(/^[0-9]+h/));
+
+    return (
+        <div className={`flex flex-col gap-1`}>
+            <div className={`font-mono text-[11px] font-black px-2 py-1 rounded border shadow-inner ${isExpired ? 'bg-red-500/10 border-red-500/30 text-red-500' :
+                isPausedDisplay ? 'bg-indigo-500/20 border-indigo-500/40 text-indigo-400' :
+                    isWarning ? 'bg-amber-500/10 border-amber-500/30 text-amber-500 animate-pulse' :
+                        'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
+                }`}>
+                {timeLeft}
+            </div>
+            {endDate && !isExpired && !isPaused && (
+                <div className="text-[9px] text-slate-500 flex items-center gap-1 opacity-60">
+                    📅 {new Date(endDate).toLocaleDateString()}
+                </div>
+            )}
+        </div>
+    );
+};
 
 const SuperAdminDashboard = () => {
     const navigate = useNavigate();
@@ -236,9 +301,10 @@ const SuperAdminDashboard = () => {
 
             // Fetch schools
             try {
-                const res = await axios.get(`${API_URL}/superadmin/schools?t=${Date.now()}`, {
+                const res = await axios.get(`${API_URL}/superadmin/schools?refresh=${Date.now()}`, {
                     headers: { Authorization: `Bearer ${token}` }
                 });
+                console.log('✅ Schools Loaded:', res.data.length, res.data);
                 setSchools(res.data);
             } catch (err) {
                 console.error("Schools fetch error:", err);
@@ -339,8 +405,43 @@ const SuperAdminDashboard = () => {
         }
     };
 
+    const handlePause = async (id) => {
+        if (!window.confirm('Voulez-vous mettre en pause l\'abonnement de cette école ?')) return;
+        try {
+            await axios.post(`${API_URL}/superadmin/schools/${id}/pause`, {}, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            fetchData();
+        } catch (err) {
+            alert(err.response?.data?.error || 'Erreur lors de la pause');
+        }
+    };
+
+    const handleResume = async (id) => {
+        try {
+            await axios.post(`${API_URL}/superadmin/schools/${id}/resume`, {}, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            fetchData();
+        } catch (err) {
+            alert(err.response?.data?.error || 'Erreur lors de la reprise');
+        }
+    };
+
+    const restart30Days = async (id) => {
+        if (!window.confirm('Voulez-vous réinitialiser l\'abonnement à 30 jours (à partir de maintenant) ?')) return;
+        try {
+            await axios.patch(`${API_URL}/superadmin/schools/${id}/subscription`, { days: 30 }, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            fetchData();
+        } catch (err) {
+            alert(err.response?.data?.error || 'Erreur lors de la réinitialisation');
+        }
+    };
+
     const addSubscriptionDays = async (id, days) => {
-        const customDays = prompt("Nombre de jours d'abonnement à attribuer (à partir d'aujourd'hui) :", days);
+        const customDays = prompt("Prolonger de combien de jours ? (Saisir un nombre) :", days);
         if (customDays === null) return; // Cancelled
         if (!customDays || isNaN(customDays)) {
             alert("Veuillez entrer un nombre valide.");
@@ -419,12 +520,20 @@ const SuperAdminDashboard = () => {
             <header className="flex justify-between items-center mb-10 bg-slate-800/50 p-6 rounded-2xl border border-slate-700 backdrop-blur-md">
                 <div>
                     <div className="flex items-center gap-3 mb-1">
-                        <img src={SurveilleurLogo} alt="Surveilleur" className="w-10 h-10 rounded-full object-cover border-2 border-blue-400" />
+                        <img src={SurveillantLogo} alt="Surveillant" className="w-10 h-10 rounded-full object-cover border-2 border-blue-400" />
                         <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-transparent">
                             Panel SuperAdmin
                         </h1>
                     </div>
-                    <p className="text-slate-400 ml-14">Gestion globale de la plateforme Surveilleur / المراقب</p>
+                    <p className="text-slate-400 ml-14">Gestion globale de la plateforme Surveillant / المراقب</p>
+                    <div className="ml-14 mt-2 inline-flex flex-col gap-1">
+                        <div className="flex items-center px-3 py-1 rounded-full bg-blue-500/20 text-blue-400 text-xs font-bold border border-blue-500/30">
+                            Total chargé: {schools.length} écoles
+                        </div>
+                        <div className="text-[10px] text-slate-500 font-mono">
+                            IDs: {schools.map(s => s.id).join(', ')}
+                        </div>
+                    </div>
                 </div>
                 <div className="flex items-center gap-6">
                     <button
@@ -638,7 +747,7 @@ const SuperAdminDashboard = () => {
                                         <td className="px-6 py-4">
                                             <div className="font-bold text-emerald-400">{school.billing_amount} MRU</div>
                                         </td>
-                                        <td className="px-6 py-4 text-sm font-medium">
+                                        <td className="px-6 py-4 text-sm font-medium min-w-[150px]">
                                             {editingSchoolId === school.id ? (
                                                 <div className="flex flex-col gap-1">
                                                     <span className="text-[10px] text-slate-400 uppercase">Prolonger (jours)</span>
@@ -651,29 +760,45 @@ const SuperAdminDashboard = () => {
                                                     />
                                                 </div>
                                             ) : (
-                                                <>
-                                                    {school.subscription_end_date ? (
-                                                        (() => {
-                                                            const end = new Date(school.subscription_end_date);
-                                                            const now = new Date();
-                                                            const days = Math.ceil((end - now) / (1000 * 60 * 60 * 24));
-                                                            return (
-                                                                <div className={`text-xs ${days > 5 ? 'text-emerald-400' : 'text-red-400 font-bold'}`}>
-                                                                    {days > 0 ? `${days} jours` : 'Expiré'}
-                                                                    <div className="text-[10px] text-slate-500">{end.toLocaleDateString()}</div>
-                                                                </div>
-                                                            );
-                                                        })()
-                                                    ) : (
-                                                        <span className="text-slate-500 italic">Non défini</span>
-                                                    )}
-                                                    <button
-                                                        onClick={() => addSubscriptionDays(school.id, 30)}
-                                                        className="mt-1 text-[10px] bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded hover:bg-blue-500/30 transition-colors"
-                                                    >
-                                                        +30 Jours
-                                                    </button>
-                                                </>
+                                                <div className="flex flex-col gap-2">
+                                                    <SubscriptionTimer
+                                                        endDate={school.subscription_end_date}
+                                                        isPaused={school.is_paused}
+                                                        remainingMs={school.subscription_remaining_ms}
+                                                    />
+                                                    <div className="flex gap-1">
+                                                        <button
+                                                            onClick={() => restart30Days(school.id)}
+                                                            className="flex-[2] text-[8px] bg-blue-600 text-white px-1 py-1 rounded border border-blue-700 hover:bg-blue-700 transition-all font-bold uppercase shadow-sm"
+                                                            title="Réinitialiser à 30 jours"
+                                                        >
+                                                            🔄 30J
+                                                        </button>
+                                                        <button
+                                                            onClick={() => addSubscriptionDays(school.id, 10)}
+                                                            className="flex-1 text-[8px] bg-slate-700 text-slate-300 px-1 py-1 rounded border border-slate-600 hover:bg-slate-600 hover:text-white transition-all font-bold"
+                                                            title="Ajouter jours personnalisés"
+                                                        >
+                                                            +
+                                                        </button>
+                                                        {school.is_paused ? (
+                                                            <button
+                                                                onClick={() => handleResume(school.id)}
+                                                                className="flex-1 text-[8px] bg-emerald-500/10 text-emerald-400 px-1 py-1 rounded border border-emerald-500/20 hover:bg-emerald-600 hover:text-white transition-all font-bold uppercase"
+                                                            >
+                                                                ▶️ Repr
+                                                            </button>
+                                                        ) : (
+                                                            <button
+                                                                onClick={() => handlePause(school.id)}
+                                                                className="flex-1 text-[8px] bg-amber-500/10 text-amber-400 px-1 py-1 rounded border border-amber-500/20 hover:bg-amber-600 hover:text-white transition-all font-bold uppercase"
+                                                                disabled={!school.subscription_end_date}
+                                                            >
+                                                                ⏸️ Pose
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                </div>
                                             )}
                                         </td>
                                         <td className="px-6 py-4">

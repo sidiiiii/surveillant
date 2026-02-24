@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Trash2, Plus, ArrowLeft } from 'lucide-react';
+import { Trash2, Plus, ArrowLeft, LayoutDashboard } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { API_URL } from '../../config';
+import SurveillantLogo from '../../assets/Surveillant.jpeg';
 
 const Subjects = () => {
     const [subjects, setSubjects] = useState([]);
@@ -66,15 +67,22 @@ const Subjects = () => {
 
     return (
         <div className="min-h-screen bg-gray-50">
-            <nav className="bg-white shadow">
+            <nav className="bg-white/80 backdrop-blur-md shadow-sm sticky top-0 z-50 border-b border-gray-100">
                 <div className="px-4 mx-auto max-w-7xl sm:px-6 lg:px-8">
-                    <div className="flex justify-between h-16">
-                        <div className="flex items-center">
-                            <span className="text-xl font-bold text-blue-600">Ajouter Matière</span>
+                    <div className="flex justify-between h-20">
+                        <div className="flex items-center gap-3">
+                            <img src={SurveillantLogo} alt="Logo" className="w-12 h-12 rounded-xl object-cover shadow-sm" />
+                            <div className="flex flex-col">
+                                <span className="text-xl font-black text-blue-600 tracking-tight leading-none">Surveillant</span>
+                                {schoolInfo && <span className="text-[10px] text-gray-400 font-bold tracking-widest uppercase mt-1">{schoolInfo.name}</span>}
+                            </div>
                         </div>
-                        <div className="flex items-center">
-                            <button onClick={() => navigate('/admin')} className="flex items-center text-gray-600 hover:text-gray-900">
-                                <ArrowLeft className="w-5 h-5 mr-2" /> Retour au Dashboard
+                        <div className="flex items-center gap-6">
+                            <button onClick={() => navigate('/admin')} className="flex items-center gap-2 group transition-all">
+                                <div className="w-10 h-10 rounded-full border-2 border-blue-600 flex items-center justify-center text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-all shadow-sm">
+                                    <LayoutDashboard className="w-5 h-5" />
+                                </div>
+                                <span className="text-xs font-bold text-gray-600 group-hover:text-blue-600 hidden md:block uppercase tracking-wider">Dashboard</span>
                             </button>
                         </div>
                     </div>

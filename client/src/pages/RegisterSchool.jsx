@@ -3,7 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
 import { Loader2 } from 'lucide-react';
 import { API_URL } from '../config';
-import SurveilleurLogo from '../assets/Surveilleur.jpeg';
+import SurveillantLogo from '../assets/Surveillant.jpeg';
 
 const RegisterSchool = () => {
     const navigate = useNavigate();
@@ -83,8 +83,8 @@ const RegisterSchool = () => {
         <div className="flex items-center justify-center min-h-screen bg-gray-100 p-4">
             <div className="w-full max-w-lg p-8 bg-white rounded-lg shadow-md">
                 <div className="text-center mb-6">
-                    <img src={SurveilleurLogo} alt="Surveilleur" className="w-16 h-16 mx-auto rounded-full object-cover shadow-sm mb-3" />
-                    <h1 className="text-xl font-bold text-gray-900">Surveilleur <span className="text-blue-600 font-arabic">المراقب</span></h1>
+                    <img src={SurveillantLogo} alt="Surveillant" className="w-16 h-16 mx-auto rounded-full object-cover shadow-sm mb-3" />
+                    <h1 className="text-xl font-bold text-gray-900">Surveillant <span className="text-blue-600 font-arabic">المراقب</span></h1>
                 </div>
                 <h2 className="mb-6 text-2xl font-bold text-center text-gray-800">Register Your School</h2>
 

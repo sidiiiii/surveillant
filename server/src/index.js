@@ -52,6 +52,7 @@ app.use('/api/classes', require('./routes/classes'));
 app.use('/api/schools', require('./routes/schools'));
 app.use('/api/public', require('./routes/public'));
 app.use('/api/superadmin', require('./routes/superadmin'));
+app.use('/api/analysis', require('./routes/analysis'));
 
 app.get('/', (req, res) => {
     res.send('School Tracking Platform API');

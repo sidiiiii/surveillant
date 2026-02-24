@@ -140,6 +140,51 @@ router.post('/', authenticateToken, authorizeRole(['admin', 'teacher']), async (
                 } else {
                     console.log('[NOTIF] No parent email found, skipping email notification');
                 }
+
+                // --- SENTINELLE ALERT: 2 Consecutive Bad Grades ---
+                if (grade < 10) {
+                    const { rows: prevRows } = await db.query(`
+                        SELECT grade FROM grades 
+                        WHERE student_id = $1 AND subject_id = $2 AND id != $3
+                        ORDER BY date DESC LIMIT 1
+                    `, [student_id, subject_id, newGradeId]);
+
+                    if (prevRows.length > 0 && prevRows[0].grade < 10) {
+                        console.log('[SENTINELLE] 🚨 Consecutive bad grades detected! Sending alert...');
+
+                        const parentEmail = studentInfo.linked_parent_email || studentInfo.parent_email;
+                        if (parentEmail) {
+                            const alertSubject = `🚨 Alerte Sentinelle / تنبيه من المراقب: ${studentInfo.student_name}`;
+                            const alertContent = {
+                                ar: `
+                                    <h2 style="color: #ef4444; text-align: center;">⚠️ تنبيه من نظام المراقب</h2>
+                                    <p>لقد لاحظ نظامنا الذكي تراجعاً مستمراً في نتائج ابنكم <strong>${studentInfo.student_name}</strong> في مادة <strong>${studentInfo.subject_name}</strong>.</p>
+                                    <div style="background: #fee2e2; padding: 15px; border-radius: 10px; border: 1px solid #fecaca; margin: 20px 0;">
+                                        <p style="margin: 0;"><strong>السبب:</strong> تم تسجيل درجتين ضعيفتين متتاليتين في هذه المادة.</p>
+                                    </div>
+                                    <p>نقترح عليكم متابعة دروسه في هذه المادة أو التواصل مع المدرسة للمزيد من التوضيحات.</p>
+                                `,
+                                fr: `
+                                    <h2 style="color: #ef4444; text-align: center;">⚠️ Alerte Système Sentinelle</h2>
+                                    <p>Notre système intelligent a détecté une difficulté persistante pour votre enfant <strong>${studentInfo.student_name}</strong> dans la matière : <strong>${studentInfo.subject_name}</strong>.</p>
+                                    <div style="background: #fee2e2; padding: 15px; border-radius: 10px; border: 1px solid #fecaca; margin: 20px 0;">
+                                        <p style="margin: 0;"><strong>Motif :</strong> Deux notes insuffisantes consécutives détectées.</p>
+                                    </div>
+                                    <p>Nous vous suggérons de renforcer le suivi dans cette matière ou de contacter l'école pour en discuter avec l'enseignant.</p>
+                                `
+                            };
+
+                            sendEmail(parentEmail, alertSubject, alertContent, {
+                                name: "Sentinelle - " + studentInfo.school_name,
+                                email: studentInfo.school_email,
+                                smtp_user: studentInfo.smtp_user,
+                                smtp_pass: studentInfo.smtp_pass,
+                                smtp_host: studentInfo.smtp_host,
+                                smtp_port: studentInfo.smtp_port
+                            }).catch(err => console.error('[SENTINELLE] Email alert failed:', err));
+                        }
+                    }
+                }
             } else {
                 console.log('[NOTIF] No student info found');
             }

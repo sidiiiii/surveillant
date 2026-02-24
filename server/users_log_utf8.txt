@@ -1,0 +1,9 @@
+--- ALL USERS ---
+ID: 13 | Email: qwe@gmail.com | Super: false | Role: parent | School: 2
+ID: 1 | Email: abdelkadermed06@gmail.com | Super: true | Role: admin | School: 2
+ID: 17 | Email: ert@gmail.com | Super: false | Role: parent | School: 2
+ID: 18 | Email: meds14099@gmail.com | Super: false | Role: parent | School: 2
+ID: 4 | Email: abdelkadermed23@gmail.com | Super: false | Role: admin | School: 2
+ID: 19 | Email: wer@gmail.com | Super: false | Role: parent | School: 2
+ID: 5 | Email: elwevacommerce@gmail.com | Super: false | Role: admin | School: 3
+ID: 21 | Email: firsttest958@gmail.com | Super: false | Role: admin | School: 11

@@ -1,15 +1,17 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
-import { Users, ClipboardCheck, LogOut, Edit, Trash2, Settings, Clock } from 'lucide-react';
+import { Users, ClipboardCheck, LogOut, Edit, Trash2, Settings, Clock, Trophy, BarChart3, BookOpen, GraduationCap, ArrowLeft, Plus } from 'lucide-react';
 import { API_URL } from '../../config';
+import SentinelWidget from '../../components/SentinelWidget';
+import SurveillantLogo from '../../assets/Surveillant.jpeg';
 
 const AdminDashboard = () => {
     const [students, setStudents] = useState([]);
     const [loading, setLoading] = useState(true);
     const [newStudentName, setNewStudentName] = useState('');
     const [parentEmail, setParentEmail] = useState('');
-    const [nni, setNni] = useState('');
+    const [nsi, setNsi] = useState('');
     const [cycle, setCycle] = useState('Primaire');
     const [niveau, setNiveau] = useState('Classe 1');
     const [serie, setSerie] = useState('');
@@ -18,6 +20,7 @@ const AdminDashboard = () => {
     const [classList, setClassList] = useState([]);
     const [selectedClassId, setSelectedClassId] = useState('');
     const [schoolInfo, setSchoolInfo] = useState(null);
+    const [emailConfigured, setEmailConfigured] = useState(true);
 
     // Search & Filter State
     const [searchTerm, setSearchTerm] = useState('');
@@ -34,7 +37,6 @@ const AdminDashboard = () => {
         const arabic = '٠١٢٣٤٥٦٧٨٩';
         const farsi = '۰۱۲۳۴۵۶۷۸۹';
         return str.toString()
-            .replace(/\s/g, '')
             .replace(/[٠-٩]/g, (d) => arabic.indexOf(d))
             .replace(/[۰-۹]/g, (d) => farsi.indexOf(d));
     };
@@ -44,9 +46,9 @@ const AdminDashboard = () => {
     useEffect(() => {
         const loadData = async () => {
             await fetchStudents();
-            await fetchSubjects();
             await fetchClasses();
             await fetchSchoolInfo();
+            await fetchEmailStatus();
         };
         loadData();
     }, []);
@@ -59,6 +61,19 @@ const AdminDashboard = () => {
             });
             setSchoolInfo(res.data);
         } catch (error) { console.error(error); }
+    };
+
+    const fetchEmailStatus = async () => {
+        try {
+            const token = localStorage.getItem('token');
+            const res = await axios.get(`${API_URL}/schools/email-settings`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            setEmailConfigured(!!(res.data && res.data.smtp_user));
+        } catch (error) {
+            console.error(error);
+            setEmailConfigured(false);
+        }
     };
 
     const fetchStudents = async () => {
@@ -76,16 +91,6 @@ const AdminDashboard = () => {
         }
     };
 
-    const fetchSubjects = async () => {
-        const token = localStorage.getItem('token');
-        try {
-            const res = await axios.get(`${API_URL}/subjects`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            setSubjects(res.data);
-            if (res.data.length > 0) setSelectedSubject(res.data[0].id);
-        } catch (error) { console.error(error); }
-    };
 
     const fetchClasses = async () => {
         const token = localStorage.getItem('token');
@@ -114,7 +119,6 @@ const AdminDashboard = () => {
             data.append('name', newStudentName);
             data.append('class_id', selectedClassId);
             data.append('parent_email', parentEmail);
-            data.append('nni', nni);
             data.append('cycle', selectedClass ? selectedClass.cycle : cycle);
             data.append('niveau', selectedClass ? selectedClass.niveau : niveau);
             data.append('serie', cycle === 'Lycée' ? serie : '');
@@ -128,7 +132,7 @@ const AdminDashboard = () => {
             });
             setNewStudentName('');
             setParentEmail('');
-            setNni('');
+            setNsi('');
             setCycle('Primaire');
             setNiveau('Classe 1');
             setSerie('');
@@ -207,23 +211,60 @@ const AdminDashboard = () => {
 
     return (
         <div className="min-h-screen bg-gray-50">
-            <nav className="bg-white shadow">
+            <nav className="bg-white/80 backdrop-blur-md shadow-sm sticky top-0 z-50 border-b border-gray-100">
                 <div className="px-4 mx-auto max-w-7xl sm:px-6 lg:px-8">
-                    <div className="flex justify-between h-16">
-                        <div className="flex items-center gap-2">
+                    <div className="flex justify-between h-20">
+                        <div className="flex items-center gap-3">
+                            <img src={SurveillantLogo} alt="Logo" className="w-12 h-12 rounded-xl object-cover shadow-sm" />
                             <div className="flex flex-col">
-                                <span className="text-xl font-bold text-blue-600">School Admin</span>
-                                {user.school_name && <span className="text-xs text-gray-500 font-medium tracking-wider uppercase">{user.school_name}</span>}
+                                <span className="text-xl font-black text-blue-600 tracking-tight leading-none">Surveillant</span>
+                                {user.school_name && <span className="text-[10px] text-gray-400 font-bold tracking-widest uppercase mt-1">{user.school_name}</span>}
                             </div>
                         </div>
-                        <div className="flex items-center gap-4">
-                            <button onClick={() => navigate('/admin/subjects')} className="text-gray-600 font-medium hover:text-blue-600">Ajouter Matière</button>
-                            <button onClick={() => navigate('/admin/classes')} className="text-gray-600 font-medium hover:text-blue-600">Ajouter Classe</button>
-                            <button onClick={() => navigate('/admin/settings')} className="text-gray-600 font-medium hover:text-blue-600 flex items-center">
-                                <Settings className="w-5 h-5 mr-1" /> Email
+                        <div className="flex items-center gap-6">
+                            <button onClick={() => navigate('/admin/subjects')} className="flex items-center gap-2 group transition-all">
+                                <div className="w-10 h-10 rounded-full border-2 border-blue-600 flex items-center justify-center text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-all shadow-sm">
+                                    <BookOpen className="w-5 h-5" />
+                                </div>
+                                <span className="text-xs font-bold text-gray-600 group-hover:text-blue-600 hidden md:block uppercase tracking-wider">Matières</span>
                             </button>
-                            <button onClick={handleLogout} className="flex items-center text-gray-600 hover:text-gray-900 border-l pl-4 ml-2">
-                                <LogOut className="w-5 h-5 mr-2" /> Logout
+
+                            <button onClick={() => navigate('/admin/classes')} className="flex items-center gap-2 group transition-all">
+                                <div className="w-10 h-10 rounded-full border-2 border-blue-600 flex items-center justify-center text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-all shadow-sm">
+                                    <GraduationCap className="w-5 h-5" />
+                                </div>
+                                <span className="text-xs font-bold text-gray-600 group-hover:text-blue-600 hidden md:block uppercase tracking-wider">Classes</span>
+                            </button>
+
+                            <button onClick={() => navigate('/admin/statistics')} className="flex items-center gap-2 group transition-all">
+                                <div className="w-10 h-10 rounded-full border-2 border-blue-600 flex items-center justify-center text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-all shadow-sm">
+                                    <BarChart3 className="w-5 h-5" />
+                                </div>
+                                <span className="text-xs font-bold text-gray-600 group-hover:text-blue-600 hidden md:block uppercase tracking-wider">Statistique</span>
+                            </button>
+
+                            <button onClick={() => window.open('https://wa.me/22238310476', '_blank')} className="flex items-center gap-2 group transition-all">
+                                <div className="w-10 h-10 rounded-full bg-green-500 flex items-center justify-center text-white group-hover:bg-green-600 transition-all shadow-sm">
+                                    <svg viewBox="0 0 24 24" className="w-5 h-5 fill-current">
+                                        <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L0 24l6.335-1.662c1.72 1.036 3.702 1.582 5.712 1.583h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z" />
+                                    </svg>
+                                </div>
+                                <span className="text-xs font-bold text-gray-600 group-hover:text-green-600 hidden md:block uppercase tracking-wider">WhatsApp</span>
+                            </button>
+
+                            <button onClick={() => navigate('/admin/settings')} className="flex items-center gap-2 group transition-all relative">
+                                <div className={`w-10 h-10 rounded-full border-2 ${!emailConfigured ? 'border-amber-500 animate-pulse' : 'border-blue-600'} flex items-center justify-center ${!emailConfigured ? 'text-amber-500' : 'text-blue-600'} group-hover:bg-blue-600 group-hover:text-white transition-all shadow-sm`}>
+                                    <Settings className="w-5 h-5" />
+                                </div>
+                                <div className="flex flex-col">
+                                    <span className="text-xs font-bold text-gray-600 group-hover:text-blue-600 hidden md:block uppercase tracking-wider">Paramètres</span>
+                                    {!emailConfigured && <span className="text-[9px] text-amber-600 font-bold hidden md:block whitespace-nowrap animate-bounce">Config. Email</span>}
+                                </div>
+                                {!emailConfigured && <div className="absolute -top-1 right-0 w-3 h-3 bg-amber-500 border-2 border-white rounded-full"></div>}
+                            </button>
+
+                            <button onClick={handleLogout} className="flex items-center justify-center w-10 h-10 rounded-full bg-gray-100 text-gray-500 hover:bg-red-50 hover:text-red-600 transition-all ml-4">
+                                <LogOut className="w-5 h-5" />
                             </button>
                         </div>
                     </div>
@@ -232,6 +273,9 @@ const AdminDashboard = () => {
 
             <main className="py-6 mx-auto max-w-7xl sm:px-6 lg:px-8">
                 <div className="px-4 py-6 sm:px-0">
+
+                    {/* Module Sentinelle */}
+                    {schoolInfo && <SentinelWidget schoolId={schoolInfo.id} />}
 
                     {/* Add Student Form */}
                     {classList.length === 0 && (
@@ -326,11 +370,10 @@ const AdminDashboard = () => {
                                 className="p-2 border rounded"
                                 value={newStudentName} onChange={e => setNewStudentName(e.target.value)} required
                             />
-                            <input
-                                type="text" placeholder="NNI (ex: 1234567890)"
-                                className="p-2 border rounded font-mono"
-                                value={nni} onChange={e => setNni(toLatinDigits(e.target.value))} required
-                            />
+                            <div className="p-2 border rounded bg-gray-50 flex flex-col justify-center">
+                                <span className="text-[10px] font-bold text-gray-400 uppercase">NSI (Auto-généré)</span>
+                                <span className="text-gray-400 italic text-sm">Sera généré automatiquement</span>
+                            </div>
                             <select
                                 className="p-2 border rounded bg-blue-50 border-blue-200 font-bold"
                                 value={selectedClassId}
@@ -410,7 +453,7 @@ const AdminDashboard = () => {
                             <div className="md:col-span-2">
                                 <input
                                     type="text"
-                                    placeholder="Rechercher par Nom ou NNI..."
+                                    placeholder="Rechercher par Nom ou NSI..."
                                     className="w-full p-2 border rounded text-sm shadow-sm"
                                     value={searchTerm}
                                     onChange={e => setSearchTerm(toLatinDigits(e.target.value))}
@@ -447,221 +490,88 @@ const AdminDashboard = () => {
                         </div>
                     </div>
 
-                    <h1 className="mb-6 text-2xl font-bold text-gray-900">Student List</h1>
+                    <h1 className="mb-6 text-2xl font-black text-gray-900 uppercase tracking-tight flex items-center gap-3">
+                        <GraduationCap className="w-8 h-8 text-blue-600" />
+                        Liste des Classes
+                    </h1>
 
                     {
-                        loading ? <div className="text-center">Loading...</div> : (
-                            <div className="overflow-scroll bg-white shadow sm:rounded-lg">
-                                {Object.keys(students.filter(s => {
+                        loading ? <div className="text-center py-20 animate-pulse text-gray-400 font-bold uppercase tracking-widest">Chargement des données...</div> : (
+                            <div className="space-y-8">
+                                {Object.keys(classList.filter(c => {
                                     const matchesSearch = !searchTerm ||
-                                        s.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                                        (s.nni && s.nni.includes(searchTerm));
-                                    const matchesCycle = !filterCycle || s.cycle === filterCycle;
-                                    const matchesLevel = !filterLevel || s.niveau === filterLevel;
-                                    const matchesClass = !filterClass || s.class_id == filterClass;
-                                    return matchesSearch && matchesCycle && matchesLevel && matchesClass;
-                                }).reduce((acc, s) => {
-                                    const key = `${s.cycle} — ${s.niveau}`;
-                                    if (!acc[key]) acc[key] = [];
-                                    acc[key].push(s);
-                                    return acc;
-                                }, {})).sort().map(levelKey => {
-                                    const groupedStudents = students.filter(s => {
-                                        const matchesKey = `${s.cycle} — ${s.niveau}` === levelKey;
-                                        const matchesSearch = !searchTerm ||
+                                        c.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                                        students.filter(s => s.class_id == c.id).some(s =>
                                             s.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                                            (s.nni && s.nni.includes(searchTerm));
-                                        const matchesCycle = !filterCycle || s.cycle === filterCycle;
-                                        const matchesLevel = !filterLevel || s.niveau === filterLevel;
-                                        const matchesClass = !filterClass || s.class_id == filterClass;
-                                        return matchesKey && matchesSearch && matchesCycle && matchesLevel && matchesClass;
+                                            (s.nsi && s.nsi.includes(searchTerm.trim()))
+                                        );
+                                    const matchesCycle = !filterCycle || c.cycle === filterCycle;
+                                    return matchesSearch && matchesCycle;
+                                }).reduce((acc, c) => {
+                                    const key = c.cycle;
+                                    if (!acc[key]) acc[key] = [];
+                                    acc[key].push(c);
+                                    return acc;
+                                }, {})).sort().map(cycle => {
+                                    const groupedClasses = classList.filter(c => {
+                                        const matchesCycle = c.cycle === cycle;
+                                        const matchesSearch = !searchTerm ||
+                                            c.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                                            students.filter(s => s.class_id == c.id).some(s =>
+                                                s.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                                                (s.nsi && s.nsi.includes(searchTerm.trim()))
+                                            );
+                                        const matchesCycleFilter = !filterCycle || c.cycle === filterCycle;
+                                        return matchesCycle && matchesSearch && matchesCycleFilter;
                                     });
                                     return (
-                                        <div key={levelKey} className="border-b last:border-b-0">
-                                            <div className="bg-gray-100 px-4 py-2 text-sm font-bold text-gray-700 border-b uppercase flex justify-between items-center">
-                                                <span>{levelKey}</span>
-                                                <span className="bg-blue-200 text-blue-800 px-2 py-0.5 rounded-full text-xs">
-                                                    {groupedStudents.length} {groupedStudents.length > 1 ? 'Élèves' : 'Élève'}
-                                                </span>
+                                        <div key={cycle} className="space-y-4">
+                                            <div className="flex items-center gap-4">
+                                                <h2 className="text-sm font-black text-gray-400 uppercase tracking-[0.2em]">{cycle}</h2>
+                                                <div className="h-px bg-gray-200 flex-1"></div>
                                             </div>
-                                            <ul className="divide-y divide-gray-100">
-                                                {groupedStudents.map((student) => (
-                                                    <li key={student.id} className="p-4 hover:bg-gray-50 border-l-4 border-transparent hover:border-blue-500 transition-colors">
-                                                        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                                                            <div
-                                                                className="flex items-center flex-1 cursor-pointer hover:bg-blue-50 -mx-4 -my-4 px-4 py-4 rounded transition-colors"
-                                                                onClick={() => navigate(`/admin/student/${student.id}/documents`)}
-                                                                title="Cliquez pour voir les documents (exercices, devoirs, examens)"
-                                                            >
-                                                                <div className="flex-shrink-0">
-                                                                    {student.photo_url ? (
-                                                                        <img
-                                                                            src={`${API_URL.replace('/api', '')}${student.photo_url}`}
-                                                                            alt={student.name}
-                                                                            className="w-12 h-12 rounded-full object-cover border-2 border-blue-100 shadow-sm"
-                                                                        />
-                                                                    ) : (
-                                                                        <span className="inline-flex items-center justify-center w-12 h-12 bg-blue-100 rounded-full shadow-sm text-blue-600">
-                                                                            <Users className="w-6 h-6" />
-                                                                        </span>
-                                                                    )}
-                                                                </div>
-                                                                <div className="ml-4">
-                                                                    <div className="flex items-center gap-2">
-                                                                        <h3 className="text-lg font-bold text-gray-900 leading-tight">{student.name}</h3>
-                                                                        <span className="px-2 py-0.5 text-[10px] font-bold text-blue-700 bg-blue-100 rounded border border-blue-200 uppercase tracking-tighter">
-                                                                            {student.class_name || 'Sans Classe'}
-                                                                        </span>
+                                            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
+                                                {groupedClasses.map((cls) => {
+                                                    const studentCount = students.filter(s => s.class_id == cls.id).length;
+                                                    return (
+                                                        <div
+                                                            key={cls.id}
+                                                            onClick={() => navigate(`/admin/class/${cls.id}/students`)}
+                                                            className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 hover:border-blue-500 hover:shadow-xl hover:-translate-y-1 transition-all cursor-pointer group flex flex-col justify-between h-32"
+                                                        >
+                                                            <div>
+                                                                <div className="flex justify-between items-start mb-2">
+                                                                    <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-all transform group-hover:rotate-6">
+                                                                        <Users className="w-4 h-4" />
                                                                     </div>
-                                                                    <div className="text-xs text-gray-500 flex flex-wrap items-center gap-x-3 gap-y-1 mt-1">
-                                                                        <span className="bg-gray-100 px-1.5 py-0.5 rounded font-mono">NNI: {student.nni}</span>
-                                                                        <span>•</span>
-                                                                        <span className="italic">Parent: {student.parent_email || 'Non renseigné'}</span>
-                                                                    </div>
+                                                                    <span className="text-[10px] font-black text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full uppercase tracking-tighter group-hover:bg-blue-600 group-hover:text-white transition-all">
+                                                                        {cls.niveau}
+                                                                    </span>
                                                                 </div>
+                                                                <h3 className="text-base font-black text-gray-900 uppercase tracking-tight group-hover:text-blue-600 transition-colors leading-tight">{cls.name}</h3>
                                                             </div>
-                                                            <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-                                                                <div className="flex gap-2">
-                                                                    <button
-                                                                        onClick={(e) => {
-                                                                            e.stopPropagation();
-                                                                            if (schoolInfo?.status === 'suspended') return;
-                                                                            setEditingStudent({ ...student });
-                                                                            setIsEditModalOpen(true);
-                                                                        }}
-                                                                        disabled={schoolInfo?.status === 'suspended'}
-                                                                        className={`p-1.5 rounded-full transition-colors ${schoolInfo?.status === 'suspended'
-                                                                            ? 'text-gray-300 cursor-not-allowed'
-                                                                            : 'text-blue-600 hover:bg-blue-100'
-                                                                            }`}
-                                                                        title={schoolInfo?.status === 'suspended' ? 'Restriction' : "Modifier"}
-                                                                    >
-                                                                        <Edit className="w-5 h-5" />
-                                                                    </button>
-                                                                    <button
-                                                                        onClick={(e) => {
-                                                                            e.stopPropagation();
-                                                                            if (schoolInfo?.status === 'suspended') return;
-                                                                            handleDeleteStudent(student.id);
-                                                                        }}
-                                                                        disabled={schoolInfo?.status === 'suspended'}
-                                                                        className={`p-1.5 rounded-full transition-colors ${schoolInfo?.status === 'suspended'
-                                                                            ? 'text-gray-300 cursor-not-allowed'
-                                                                            : 'text-red-500 hover:bg-red-100'
-                                                                            }`}
-                                                                        title={schoolInfo?.status === 'suspended' ? 'Restriction' : "Supprimer"}
-                                                                    >
-                                                                        <Trash2 className="w-5 h-5" />
-                                                                    </button>
-                                                                </div>
-                                                                <div className="h-4 w-px bg-gray-200 hidden sm:block mx-1"></div>
-                                                                <div className="flex items-center gap-2">
-                                                                    <div className="flex flex-wrap gap-1">
-                                                                        <button
-                                                                            onClick={(e) => {
-                                                                                e.stopPropagation();
-                                                                                if (schoolInfo?.status === 'suspended') return;
-                                                                                markAttendance(student.id, 'present');
-                                                                            }}
-                                                                            disabled={schoolInfo?.status === 'suspended'}
-                                                                            className={`p-1 px-1.5 text-[9px] font-bold rounded border transition-colors uppercase ${schoolInfo?.status === 'suspended'
-                                                                                ? 'text-gray-300 border-gray-200 cursor-not-allowed'
-                                                                                : 'text-green-600 border-green-200 hover:bg-green-50'
-                                                                                }`}
-                                                                            title="Présent"
-                                                                        >
-                                                                            P
-                                                                        </button>
-                                                                        <button
-                                                                            onClick={(e) => {
-                                                                                e.stopPropagation();
-                                                                                if (schoolInfo?.status === 'suspended') return;
-                                                                                markAttendance(student.id, 'late');
-                                                                            }}
-                                                                            disabled={schoolInfo?.status === 'suspended'}
-                                                                            className={`p-1 px-1.5 text-[9px] font-bold rounded border transition-colors uppercase ${schoolInfo?.status === 'suspended'
-                                                                                ? 'text-gray-300 border-gray-200 cursor-not-allowed'
-                                                                                : 'text-yellow-600 border-yellow-200 hover:bg-yellow-50'
-                                                                                }`}
-                                                                            title="En retard"
-                                                                        >
-                                                                            R
-                                                                        </button>
-                                                                        <button
-                                                                            onClick={(e) => {
-                                                                                e.stopPropagation();
-                                                                                if (schoolInfo?.status === 'suspended') return;
-                                                                                markAttendance(student.id, 'absent');
-                                                                            }}
-                                                                            disabled={schoolInfo?.status === 'suspended'}
-                                                                            className={`p-1 px-1.5 text-[9px] font-bold rounded border transition-colors uppercase font-black ${schoolInfo?.status === 'suspended'
-                                                                                ? 'text-gray-300 border-gray-200 cursor-not-allowed'
-                                                                                : 'text-red-700 border-red-200 hover:bg-red-50'
-                                                                                }`}
-                                                                            title="Absent toute la journée"
-                                                                        >
-                                                                            A
-                                                                        </button>
-                                                                        <div className="flex bg-gray-50 rounded p-0.5 border border-gray-100 italic">
-                                                                            <button
-                                                                                onClick={(e) => {
-                                                                                    e.stopPropagation();
-                                                                                    if (schoolInfo?.status === 'suspended') return;
-                                                                                    markAttendance(student.id, 'absent_8h_10h');
-                                                                                }}
-                                                                                disabled={schoolInfo?.status === 'suspended'}
-                                                                                className={`p-1 px-1 text-[9px] font-bold rounded transition-colors uppercase ${schoolInfo?.status === 'suspended'
-                                                                                    ? 'text-gray-300 cursor-not-allowed'
-                                                                                    : 'text-red-600 hover:bg-red-50'
-                                                                                    }`}
-                                                                                title="Absent 08:00 - 10:00"
-                                                                            >
-                                                                                8-10
-                                                                            </button>
-                                                                            <div className="w-px bg-gray-200 mx-0.5"></div>
-                                                                            <button
-                                                                                onClick={(e) => {
-                                                                                    e.stopPropagation();
-                                                                                    if (schoolInfo?.status === 'suspended') return;
-                                                                                    markAttendance(student.id, 'absent_10h_12h');
-                                                                                }}
-                                                                                disabled={schoolInfo?.status === 'suspended'}
-                                                                                className={`p-1 px-1 text-[9px] font-bold rounded transition-colors uppercase ${schoolInfo?.status === 'suspended'
-                                                                                    ? 'text-gray-300 cursor-not-allowed'
-                                                                                    : 'text-red-600 hover:bg-red-50'
-                                                                                    }`}
-                                                                                title="Absent 10:00 - 12:00"
-                                                                            >
-                                                                                10-12
-                                                                            </button>
-                                                                            <div className="w-px bg-gray-200 mx-0.5"></div>
-                                                                            <button
-                                                                                onClick={(e) => {
-                                                                                    e.stopPropagation();
-                                                                                    if (schoolInfo?.status === 'suspended') return;
-                                                                                    markAttendance(student.id, 'absent_12h_14h');
-                                                                                }}
-                                                                                disabled={schoolInfo?.status === 'suspended'}
-                                                                                className={`p-1 px-1 text-[9px] font-bold rounded transition-colors uppercase ${schoolInfo?.status === 'suspended'
-                                                                                    ? 'text-gray-300 cursor-not-allowed'
-                                                                                    : 'text-red-600 hover:bg-red-50'
-                                                                                    }`}
-                                                                                title="Absent 12:00 - 14:00"
-                                                                            >
-                                                                                12-14
-                                                                            </button>
-                                                                        </div>
-                                                                    </div>
-
+                                                            <div className="flex items-center justify-between mt-4">
+                                                                <span className="text-xs font-bold text-gray-400 uppercase tracking-wide">
+                                                                    {studentCount} Élève{studentCount > 1 ? 's' : ''}
+                                                                </span>
+                                                                <div className="w-8 h-8 rounded-full bg-gray-50 flex items-center justify-center text-gray-400 group-hover:bg-blue-50 group-hover:text-blue-500 transition-all">
+                                                                    <ArrowLeft className="w-4 h-4 rotate-180" />
                                                                 </div>
                                                             </div>
                                                         </div>
-                                                    </li>
-                                                ))}
-                                            </ul>
+                                                    );
+                                                })}
+                                            </div>
                                         </div>
                                     );
                                 })}
+                                {classList.length === 0 && (
+                                    <div className="bg-white p-20 rounded-2xl border-2 border-dashed border-gray-200 text-center">
+                                        <GraduationCap className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+                                        <p className="text-gray-500 font-bold">Aucune classe configurée pour le moment.</p>
+                                        <button onClick={() => navigate('/admin/classes')} className="mt-4 text-blue-600 font-black uppercase text-xs hover:underline">Créer ma première classe →</button>
+                                    </div>
+                                )}
                             </div>
                         )
                     }
@@ -690,13 +600,12 @@ const AdminDashboard = () => {
                                         />
                                     </div>
                                     <div className="space-y-1">
-                                        <label className="text-xs font-semibold text-gray-500 uppercase">NNI</label>
+                                        <label className="text-xs font-semibold text-gray-500 uppercase">NSI (Identifiant Scolaire)</label>
                                         <input
                                             type="text"
-                                            className="w-full p-2 border rounded font-mono focus:ring-2 focus:ring-blue-500"
-                                            value={editingStudent.nni}
-                                            onChange={e => setEditingStudent({ ...editingStudent, nni: toLatinDigits(e.target.value) })}
-                                            required
+                                            className="w-full p-2 border rounded font-mono bg-gray-50 text-gray-500 cursor-not-allowed"
+                                            value={editingStudent.nsi}
+                                            readOnly
                                         />
                                     </div>
                                     <div className="space-y-1 md:col-span-2">

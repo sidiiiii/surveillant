@@ -12,30 +12,30 @@ const toLatinDigits = (str) => {
         .replace(/[۰-۹]/g, (d) => farsi.indexOf(d));
 };
 
-// Get student info and documents by NNI (Public Access)
-router.get('/student/:nni', async (req, res) => {
+// Get student info and documents by NSI (Public Access)
+router.get('/student/:nsi', async (req, res) => {
     try {
-        let { nni } = req.params;
-        nni = toLatinDigits(nni);
+        let { nsi } = req.params;
+        nsi = toLatinDigits(nsi);
 
-        if (!nni) {
-            return res.status(400).json({ error: 'NNI est requis' });
+        if (!nsi) {
+            return res.status(400).json({ error: 'NSI est requis' });
         }
 
         // 1. Get Student Info
         const { rows: studentRows } = await db.query(`
-            SELECT s.id, s.name, s.nni, s.matricule, s.photo_url, 
+            SELECT s.id, s.name, s.nsi, s.matricule, s.photo_url, 
                    c.name as class_name, sch.name as school_name, sch.logo_url as school_logo,
                    sch.status as school_status
             FROM students s
             LEFT JOIN classes c ON s.class_id = c.id
             JOIN schools sch ON s.school_id = sch.id
-            WHERE s.nni = $1
-        `, [nni]);
+            WHERE s.nsi = $1
+        `, [nsi]);
         const student = studentRows[0];
 
         if (!student) {
-            return res.status(404).json({ error: 'Aucun élève trouvé avec ce NNI' });
+            return res.status(404).json({ error: 'Aucun élève trouvé avec ce NSI' });
         }
 
         if (student.school_status === 'suspended') {
@@ -58,10 +58,58 @@ router.get('/student/:nni', async (req, res) => {
             ORDER BY g.date DESC
         `, [student.id]);
 
+        // 4. SENTINELLE RISK ANALYSIS (Public version)
+        // Absences last 30 days
+        const { rows: attRows } = await db.query(`
+            SELECT COUNT(*) as recent_absences 
+            FROM attendance 
+            WHERE student_id = $1 AND status = 'absent' AND date > CURRENT_DATE - INTERVAL '30 days'
+        `, [student.id]);
+        const recent_absences = parseInt(attRows[0]?.recent_absences || 0);
+
+        // Consecutive bad grades
+        const academic_alerts = [];
+        // Group grades by subject
+        const gradesBySubject = {};
+        grades.forEach(g => {
+            if (!gradesBySubject[g.subject_name]) gradesBySubject[g.subject_name] = [];
+            gradesBySubject[g.subject_name].push(g.grade);
+        });
+
+        for (const subject in gradesBySubject) {
+            const sGrades = gradesBySubject[subject];
+            // Check consecutive pairs (descending date order in 'grades' array)
+            for (let i = 0; i < sGrades.length - 1; i++) {
+                if (sGrades[i] < 10 && sGrades[i + 1] < 10) {
+                    academic_alerts.push({ subject, last_note: sGrades[i], prev_note: sGrades[i + 1] });
+                    break; // One alert per subject is enough
+                }
+            }
+        }
+
+        const risks = [];
+        if (recent_absences >= 3) {
+            risks.push({ type: 'absenteeism', label: 'Absences élevées', severity: 'high' });
+        }
+        if (academic_alerts.length > 0) {
+            const subjects = academic_alerts.map(a => a.subject);
+            risks.push({
+                type: 'academic',
+                label: `Chute en ${subjects.join(', ')}`,
+                severity: 'medium',
+                details: academic_alerts
+            });
+        }
+
         res.json({
             student,
             documents,
-            grades
+            grades,
+            sentinelle: {
+                is_at_risk: risks.length > 0,
+                risks,
+                recent_absences
+            }
         });
 
     } catch (error) {

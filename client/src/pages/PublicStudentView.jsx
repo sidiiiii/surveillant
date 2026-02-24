@@ -3,8 +3,9 @@ import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { FileText, BookOpen, ClipboardList, Download, Eye, ArrowLeft, GraduationCap, X, School, RefreshCw } from 'lucide-react';
 import { API_URL } from '../config';
-import SurveilleurLogo from '../assets/Surveilleur.jpeg';
+import SurveillantLogo from '../assets/Surveillant.jpeg';
 import VideoAdModal from '../components/VideoAdModal';
+import ParentSentinelWidget from '../components/ParentSentinelWidget';
 
 // Error Boundary to prevent white screen of death during browser translation
 class ErrorBoundary extends React.Component {
@@ -34,7 +35,7 @@ class ErrorBoundary extends React.Component {
 }
 
 const PublicStudentView = () => {
-    const { nni } = useParams();
+    const { nsi } = useParams();
     const navigate = useNavigate();
     const [data, setData] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -48,7 +49,7 @@ const PublicStudentView = () => {
     useEffect(() => {
         fetchStudentData();
         fetchSettings();
-    }, [nni]);
+    }, [nsi]);
 
     // Auto-rotate carousel every 4 seconds
     useEffect(() => {
@@ -105,11 +106,11 @@ const PublicStudentView = () => {
 
     const fetchStudentData = async () => {
         try {
-            const cleanNni = toLatinDigits(nni);
-            if (!cleanNni) return;
+            const cleanNsi = toLatinDigits(nsi);
+            if (!cleanNsi) return;
 
             setLoading(true); // Ensure loading is true while fetching
-            const response = await axios.get(`${API_URL}/public/student/${cleanNni}`);
+            const response = await axios.get(`${API_URL}/public/student/${cleanNsi}`);
 
             if (!response.data || !response.data.student) {
                 throw new Error('Données reçues invalides');
@@ -119,7 +120,7 @@ const PublicStudentView = () => {
             setError(null);
         } catch (err) {
             console.error('Error fetching student data:', err);
-            setError(err.response?.data?.error || 'Impossible de charger les données. Vérifiez le NNI.');
+            setError(err.response?.data?.error || 'Impossible de charger les données. Vérifiez le NSI.');
         } finally {
             setLoading(false);
         }
@@ -274,9 +275,9 @@ const PublicStudentView = () => {
 
                             {/* Site Logo */}
                             <div className="flex items-center gap-3 mr-6 border-r border-slate-200 pr-6 hidden md:flex">
-                                <img src={SurveilleurLogo} alt="Surveilleur" className="w-10 h-10 rounded-xl object-cover shadow-sm" />
+                                <img src={SurveillantLogo} alt="Surveillant" className="w-10 h-10 rounded-xl object-cover shadow-sm" />
                                 <div className="leading-none">
-                                    <div className="font-extrabold text-slate-800 text-lg tracking-tight">Surveilleur</div>
+                                    <div className="font-extrabold text-slate-800 text-lg tracking-tight">Surveillant</div>
                                     <div className="font-black text-indigo-500 text-xs font-arabic tracking-widest uppercase opacity-80">المراقب</div>
                                 </div>
                             </div>
@@ -308,14 +309,22 @@ const PublicStudentView = () => {
                         </div>
 
                         <div className="text-right hidden sm:block bg-slate-50 px-4 py-2 rounded-xl border border-slate-100">
-                            <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-0.5"><span>NNI Identifiant</span></div>
-                            <div className="font-mono text-lg text-slate-900 font-bold tracking-tight"><span>{student.nni}</span></div>
+                            <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-0.5"><span>NSI Identifiant</span></div>
+                            <div className="font-mono text-lg text-slate-900 font-bold tracking-tight"><span>{student.nsi}</span></div>
                         </div>
                     </div>
                 </header>
 
                 {/* Content of Result Page */}
                 <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+
+                    {/* Sentinelle IA - Suivi Préventif Public */}
+                    <div className="mb-10 max-w-4xl mx-auto">
+                        <ParentSentinelWidget
+                            studentId={student.id}
+                            initialData={data.sentinelle}
+                        />
+                    </div>
 
                     {/* Tabs - Modern Pill Style */}
                     <div className="flex justify-center mb-10">

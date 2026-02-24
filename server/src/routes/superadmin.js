@@ -39,8 +39,10 @@ router.get('/schools', async (req, res) => {
             billing_amount: parseInt(school.student_count) * 10
         }));
 
+        console.log(`[API] Sending ${schoolsWithBilling.length} schools to SuperAdmin`);
         res.json(schoolsWithBilling);
     } catch (error) {
+        console.error('[API Error] superadmin/schools:', error);
         res.status(500).json({ error: error.message });
     }
 });
@@ -58,9 +60,9 @@ router.patch('/schools/:id/subscription', async (req, res) => {
 
     try {
         console.log(`[SuperAdmin] Setting subscription for school ${id} to ${days} days from now.`);
-        // Set end date to Now + X days using simple interval addition
+        // Set end date to Now + X days, and reset pause state
         const result = await db.query(
-            "UPDATE schools SET subscription_end_date = CURRENT_TIMESTAMP + ($1 * INTERVAL '1 day') WHERE id = $2 RETURNING subscription_end_date",
+            "UPDATE schools SET subscription_end_date = CURRENT_TIMESTAMP + ($1 * INTERVAL '1 day'), is_paused = FALSE, subscription_remaining_ms = NULL, status = 'active' WHERE id = $2 RETURNING subscription_end_date",
             [days, id]
         );
 
@@ -98,6 +100,60 @@ router.patch('/schools/:id/status', async (req, res) => {
             res.status(404).json({ error: 'School not found' });
         }
     } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Pause school subscription
+router.post('/schools/:id/pause', async (req, res) => {
+    const { id } = req.params;
+    try {
+        const { rows } = await db.query('SELECT subscription_end_date, is_paused FROM schools WHERE id = $1', [id]);
+        const school = rows[0];
+
+        if (!school) return res.status(404).json({ error: 'School not found' });
+        if (school.is_paused) return res.status(400).json({ error: 'Already paused' });
+        if (!school.subscription_end_date) return res.status(400).json({ error: 'No active subscription to pause' });
+
+        const endDate = new Date(school.subscription_end_date);
+        const now = new Date();
+        const remainingMs = endDate - now;
+
+        if (remainingMs <= 0) return res.status(400).json({ error: 'Subscription already expired' });
+
+        await db.query(
+            'UPDATE schools SET is_paused = TRUE, subscription_remaining_ms = $1, subscription_end_date = NULL, status = $2 WHERE id = $3',
+            [remainingMs, 'suspended', id]
+        );
+
+        res.json({ success: true, message: 'Subscription paused' });
+    } catch (error) {
+        console.error('Pause error:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Resume school subscription
+router.post('/schools/:id/resume', async (req, res) => {
+    const { id } = req.params;
+    try {
+        const { rows } = await db.query('SELECT subscription_remaining_ms, is_paused FROM schools WHERE id = $1', [id]);
+        const school = rows[0];
+
+        if (!school) return res.status(404).json({ error: 'School not found' });
+        if (!school.is_paused) return res.status(400).json({ error: 'School is not paused' });
+
+        const remainingMs = parseInt(school.subscription_remaining_ms);
+        const newEndDate = new Date(Date.now() + remainingMs);
+
+        await db.query(
+            "UPDATE schools SET is_paused = FALSE, subscription_remaining_ms = NULL, subscription_end_date = $1, status = 'active' WHERE id = $2",
+            [newEndDate, id]
+        );
+
+        res.json({ success: true, message: 'Subscription resumed', subscription_end_date: newEndDate });
+    } catch (error) {
+        console.error('Resume error:', error);
         res.status(500).json({ error: error.message });
     }
 });
@@ -389,7 +445,7 @@ router.post('/notify-parents', (req, res, next) => {
 
         await client.query('BEGIN');
 
-        // 1. Update Global News for Public Users (NNI access)
+        // 1. Update Global News for Public Users (NSI access)
         const upsertSetting = 'INSERT INTO site_settings (key, value) VALUES ($1, $2) ON CONFLICT (key) DO UPDATE SET value = $2';
 
         await client.query(upsertSetting, ['global_news', notificationMessage]);

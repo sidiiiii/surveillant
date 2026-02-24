@@ -3,7 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
 import { Loader2 } from 'lucide-react';
 import { API_URL } from '../config';
-import SurveilleurLogo from '../assets/Surveilleur.jpeg';
+import SurveillantLogo from '../assets/Surveillant.jpeg';
 
 const Login = () => {
     const [email, setEmail] = useState('');
@@ -31,8 +31,6 @@ const Login = () => {
                 navigate('/superadmin');
             } else if (user.role === 'admin' || user.role === 'teacher') {
                 navigate('/admin');
-            } else if (user.role === 'parent') {
-                navigate('/parent');
             }
         } catch (err) {
             setError(err.response?.data?.error || 'Login failed');
@@ -51,9 +49,9 @@ const Login = () => {
                 {/* Visual Side */}
                 <div className="hidden lg:flex flex-col justify-between p-12 bg-indigo-600 relative overflow-hidden bg-mesh">
                     <div className="relative z-10">
-                        <img src={SurveilleurLogo} alt="Surveilleur" className="w-20 h-20 rounded-2xl object-cover shadow-2xl mb-8" />
+                        <img src={SurveillantLogo} alt="Surveillant" className="w-20 h-20 rounded-2xl object-cover shadow-2xl mb-8" />
                         <h1 className="text-4xl font-black text-white leading-tight mb-4">
-                            Bienvenue sur <br /> Surveilleur
+                            Bienvenue sur <br /> Surveillant
                         </h1>
                         <p className="text-indigo-100 text-lg font-medium opacity-80 leading-relaxed max-w-[300px]">
                             La plateforme moderne pour le suivi scolaire en temps réel. Notez, suivez, progressez.
@@ -146,14 +144,6 @@ const Login = () => {
                             <p className="text-sm text-blue-700">
                                 Contactez-nous : <a href="mailto:ssurveilleur@gmail.com" className="font-bold underline hover:text-blue-900">ssurveilleur@gmail.com</a>
                             </p>
-                        </div>
-
-                        <div className="p-4 rounded-2xl bg-indigo-900 border border-indigo-700">
-                            <p className="text-[10px] font-bold text-indigo-300 uppercase tracking-tighter mb-2">Compte de test (Demo) :</p>
-                            <div className="text-xs text-white/70 font-mono">
-                                <p>Admin: admin@school.com</p>
-                                <p>Mdp: password123</p>
-                            </div>
                         </div>
                     </div>
                 </div>

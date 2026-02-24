@@ -6,7 +6,7 @@ const { authenticateToken, authorizeRole } = require('../middleware/authMiddlewa
 // Get Generic School Info
 router.get('/my-school', authenticateToken, authorizeRole(['admin']), async (req, res) => {
     try {
-        const { rows } = await db.query('SELECT name, unique_code, subscription_end_date, status FROM schools WHERE id = $1', [req.user.school_id]);
+        const { rows } = await db.query('SELECT id, name, unique_code, subscription_end_date, status FROM schools WHERE id = $1', [req.user.school_id]);
         if (rows.length === 0) return res.status(404).json({ error: 'School not found' });
 
         const school = rows[0];

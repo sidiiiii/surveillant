@@ -3,13 +3,13 @@ import { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Login from './pages/Login';
 import RegisterSchool from './pages/RegisterSchool';
-import RegisterParent from './pages/RegisterParent';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminSettings from './pages/admin/AdminSettings';
 import StudentDocuments from './pages/admin/StudentDocuments';
-import ParentDashboard from './pages/parent/ParentDashboard';
 import Subjects from './pages/admin/Subjects';
 import Classes from './pages/admin/Classes';
+import ClassStudents from './pages/admin/ClassStudents';
+import Statistics from './pages/admin/Statistics';
 import PublicHome from './pages/PublicHome';
 import PublicStudentView from './pages/PublicStudentView';
 import SuperAdminDashboard from './pages/superadmin/SuperAdminDashboard';
@@ -35,11 +35,9 @@ function App() {
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/register-school" element={<RegisterSchool />} />
-        <Route path="/register-parent" element={<RegisterParent />} />
-
         {/* Public Routes */}
         <Route path="/" element={<PublicHome />} />
-        <Route path="/public/student/:nni" element={<PublicStudentView />} />
+        <Route path="/public/student/:nsi" element={<PublicStudentView />} />
 
 
         {/* Admin Routes with Nested Routing */}
@@ -49,18 +47,13 @@ function App() {
               <Route path="/" element={<AdminDashboard />} />
               <Route path="/subjects" element={<Subjects />} />
               <Route path="/classes" element={<Classes />} />
+              <Route path="/class/:classId/students" element={<ClassStudents />} />
+              <Route path="/statistics" element={<Statistics />} />
               <Route path="/settings" element={<AdminSettings />} />
               <Route path="/student/:studentId/documents" element={<StudentDocuments />} />
             </Routes>
           </ProtectedRoute>
         } />
-
-        {/* Parent Routes
-        <Route path="/parent/*" element={
-          <ProtectedRoute role="parent">
-            <ParentDashboard />
-          </ProtectedRoute>
-        } /> */}
 
         {/* SuperAdmin Routes */}
         <Route path="/superadmin" element={

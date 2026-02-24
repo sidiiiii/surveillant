@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { Search, School, ArrowRight, Loader, RefreshCw } from 'lucide-react';
 import { API_URL } from '../config';
-import SurveilleurLogo from '../assets/Surveilleur.jpeg';
+import SurveillantLogo from '../assets/Surveillant.jpeg';
 import VideoAdModal from '../components/VideoAdModal';
 
 // Error Boundary to prevent white screen of death during browser translation
@@ -34,7 +34,7 @@ class ErrorBoundary extends React.Component {
 }
 
 const PublicHome = () => {
-    const [nni, setNni] = useState('');
+    const [nsi, setNsi] = useState('');
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
     const [news, setNews] = useState(null);
@@ -112,18 +112,18 @@ const PublicHome = () => {
 
     const handleSearch = async (e) => {
         e.preventDefault();
-        const cleanNni = toLatinDigits(nni.trim());
-        if (!cleanNni) return;
+        const cleanNsi = toLatinDigits(nsi.trim());
+        if (!cleanNsi) return;
 
         setLoading(true);
         setError('');
 
         try {
-            await axios.get(`${API_URL}/public/student/${cleanNni}`);
-            navigate(`/public/student/${cleanNni}`);
+            await axios.get(`${API_URL}/public/student/${cleanNsi}`);
+            navigate(`/public/student/${cleanNsi}`);
         } catch (err) {
             console.error(err);
-            setError('Aucun élève trouvé avec ce NNI. Veuillez vérifier et réessayer.');
+            setError('Aucun élève trouvé avec ce NSI. Veuillez vérifier et réessayer.');
             setLoading(false);
         }
     };
@@ -213,12 +213,12 @@ const PublicHome = () => {
                         <div className="relative inline-block mb-6">
                             <div className="absolute inset-0 bg-white/20 blur-2xl rounded-full"></div>
                             <img
-                                src={SurveilleurLogo}
-                                alt="Surveilleur Logo"
+                                src={SurveillantLogo}
+                                alt="Surveillant Logo"
                                 className="w-24 h-24 mx-auto rounded-3xl shadow-2xl relative z-10 border-4 border-white/20 object-cover"
                             />
                         </div>
-                        <h1 className="text-5xl font-black text-white mb-2 tracking-tight">Surveilleur</h1>
+                        <h1 className="text-5xl font-black text-white mb-2 tracking-tight">Surveillant</h1>
                         <p className="text-indigo-100 text-xl font-medium tracking-[0.3em] font-arabic opacity-90 uppercase">المراقب scolaire</p>
                     </div>
                 </div>
@@ -242,14 +242,14 @@ const PublicHome = () => {
                                     <div className="relative">
                                         <input
                                             type="text"
-                                            value={nni}
-                                            onChange={(e) => setNni(toLatinDigits(e.target.value))}
+                                            value={nsi}
+                                            onChange={(e) => setNsi(toLatinDigits(e.target.value))}
                                             className="w-full bg-slate-800 border-2 border-slate-700 rounded-2xl py-5 px-6 text-white text-xl font-bold placeholder:text-slate-600 focus:border-indigo-500 focus:bg-slate-800 outline-none transition-all shadow-inner"
-                                            placeholder="Saisissez votre NNI"
+                                            placeholder="Saisissez votre NSI"
                                             required
                                         />
                                         <div className="absolute right-5 top-1/2 -translate-y-1/2 text-[10px] font-black text-slate-500 tracking-widest uppercase bg-slate-900 px-2 py-1 rounded-md border border-slate-700 pointer-events-none">
-                                            Unique
+                                            Unique 5 chiffres
                                         </div>
                                     </div>
 

@@ -25,6 +25,9 @@ const createTables = async () => {
         logo_url TEXT,
         phone TEXT,
         status TEXT DEFAULT 'active',
+        subscription_end_date TIMESTAMP,
+        subscription_remaining_ms BIGINT,
+        is_paused BOOLEAN DEFAULT FALSE,
         smtp_user TEXT,
         smtp_pass TEXT,
         smtp_host TEXT,
@@ -40,6 +43,7 @@ const createTables = async () => {
         email TEXT UNIQUE NOT NULL,
         password TEXT NOT NULL,
         role TEXT CHECK(role IN ('admin', 'teacher', 'parent')) NOT NULL,
+        is_superadmin BOOLEAN DEFAULT FALSE,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
     `);
@@ -74,7 +78,7 @@ const createTables = async () => {
         class_id INTEGER REFERENCES classes(id),
         parent_id INTEGER REFERENCES users(id),
         parent_email TEXT, 
-        nni TEXT UNIQUE,
+        nsi TEXT UNIQUE,
         cycle TEXT,
         niveau TEXT,
         serie TEXT,
@@ -144,8 +148,29 @@ const createTables = async () => {
   }
 };
 
-// Initialize tables
-const initPromise = createTables();
+const ensureSuperAdmin = async () => {
+  try {
+    const { rows } = await pool.query('SELECT * FROM users WHERE is_superadmin = TRUE');
+    if (rows.length === 0) {
+      console.log('No superadmin found. Creating default superadmin...');
+      const bcrypt = require('bcryptjs');
+      const hashedPassword = await bcrypt.hash('admin123', 10);
+      await pool.query(
+        'INSERT INTO users (name, email, password, role, is_superadmin) VALUES ($1, $2, $3, $4, $5)',
+        ['Super Admin', 'superadmin@school.com', hashedPassword, 'admin', true]
+      );
+      console.log('Default superadmin created: superadmin@school.com / admin123');
+    }
+  } catch (err) {
+    console.error('Error ensuring superadmin:', err);
+  }
+};
+
+// Initialize tables and default data
+const initPromise = (async () => {
+  await createTables();
+  await ensureSuperAdmin();
+})();
 
 module.exports = {
   query: (text, params) => pool.query(text, params),

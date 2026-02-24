@@ -4,6 +4,15 @@ const db = require('../database');
 const { authenticateToken, authorizeRole } = require('../middleware/authMiddleware');
 const upload = require('../middleware/uploadMiddleware');
 
+// Helper to generate a unique 5-digit NSI
+const generateUniqueNSI = async () => {
+    while (true) {
+        const nsi = Math.floor(10000 + Math.random() * 90000).toString(); // 5 digits
+        const { rows } = await db.query('SELECT id FROM students WHERE nsi = $1', [nsi]);
+        if (rows.length === 0) return nsi;
+    }
+};
+
 // Get all students (Admin/Teacher) - Scoped to School
 router.get('/', authenticateToken, authorizeRole(['admin', 'teacher']), async (req, res) => {
     try {
@@ -65,24 +74,20 @@ router.get('/my-children', authenticateToken, authorizeRole(['parent']), async (
 
 // Add Student (Admin)
 router.post('/', authenticateToken, authorizeRole(['admin']), upload.single('photo'), async (req, res) => {
-    const { name, class_id, parent_email, nni, cycle, niveau, serie } = req.body;
+    const { name, class_id, parent_email, cycle, niveau, serie } = req.body;
     const school_id = req.user.school_id;
 
     // Validation
-    if (!nni || !cycle || !niveau) {
-        return res.status(400).json({ error: 'NNI, cycle et niveau sont requis' });
+    if (!cycle || !niveau) {
+        return res.status(400).json({ error: 'Cycle et niveau sont requis' });
     }
 
     try {
         const bcrypt = require('bcryptjs');
         const { sendEmail } = require('../services/emailService');
 
-        // Vérifier si le NNI existe déjà (GLOBALEMENT)
-        const { rows: existingNNIRows } = await db.query('SELECT id, school_id FROM students WHERE nni = $1', [nni]);
-        const existingNNI = existingNNIRows[0];
-        if (existingNNI) {
-            return res.status(400).json({ error: 'Ce NNI est déjà utilisé dans une autre école ou la vôtre' });
-        }
+        // Generate UNIQUE 5-digit NSI
+        const nsi = await generateUniqueNSI();
 
         // Get photo URL
         const photo_url = req.file ? `/uploads/students/${req.file.filename}` : null;
@@ -119,14 +124,14 @@ router.post('/', authenticateToken, authorizeRole(['admin']), upload.single('pho
         const matricule = `STU-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
 
         const { rows: studentRows } = await db.query(`
-            INSERT INTO students (school_id, name, class_id, parent_id, parent_email, matricule, nni, cycle, niveau, serie, photo_url) 
+            INSERT INTO students (school_id, name, class_id, parent_id, parent_email, matricule, nsi, cycle, niveau, serie, photo_url) 
             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
             RETURNING id
-        `, [school_id, name, class_id, parent_id, parent_email, matricule, nni, cycle, niveau, serie || null, photo_url]);
+        `, [school_id, name, class_id, parent_id, parent_email, matricule, nsi, cycle, niveau, serie || null, photo_url]);
 
         const newStudentId = studentRows[0].id;
 
-        console.log(`[StudentCreate] ✅ Student created: ${name} (NNI: ${nni}, ${cycle} ${niveau})`);
+        console.log(`[StudentCreate] ✅ Student created: ${name} (NSI: ${nsi}, ${cycle} ${niveau})`);
 
         // 3. Send Email (omitted for brevity in this tool call, keeping original logic)
         if (parentCreated && parentPassword) {
@@ -147,7 +152,7 @@ router.post('/', authenticateToken, authorizeRole(['admin']), upload.single('pho
                 <div style="background: #dbeafe; padding: 15px; border-radius: 8px; margin: 20px 0;">
                     <h3 style="margin-top: 0;">📝 Informations de l'élève :</h3>
                     <p><strong>Nom :</strong> ${name}</p>
-                    <p><strong>NNI :</strong> <code style="background: white; padding: 4px 8px; border-radius: 4px; font-weight: bold;">${nni}</code></p>
+                    <p><strong>NSI :</strong> <code style="background: white; padding: 4px 8px; border-radius: 4px; font-weight: bold;">${nsi}</code></p>
                     <p><strong>Niveau :</strong> ${cycle} - ${niveauDisplay}</p>
                     <p><strong>Code École :</strong> <code style="background: white; padding: 4px 8px; border-radius: 4px;">${schoolInfo.unique_code}</code></p>
                     <p style="font-size: 14px; color: #666; margin-top: 10px;"><em>Note : L'élève est déjà automatiquement lié à votre compte.</em></p>
@@ -160,11 +165,11 @@ router.post('/', authenticateToken, authorizeRole(['admin']), upload.single('pho
                     <li>Recevoir des notifications en temps réel</li>
                 </ul>
 
-                <p style="margin-top: 30px;"><a href="http://localhost:5173/login" style="background: #3b82f6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">Se connecter</a></p>
+                <p style="margin-top: 30px;"><a href="https://surveillant.it.com/login" style="background: #3b82f6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">Se connecter</a></p>
 
                 <hr style="margin: 30px 0;"/>
                 <p style="color: #666; font-size: 12px;">🔒 Pour votre sécurité, veuillez changer votre mot de passe après la première connexion.</p>
-                <p style="color: #666; font-size: 12px;">💡 Conservez précieusement le <strong>NNI</strong> de votre enfant pour accéder à son dossier scolaire.</p>
+                <p style="color: #666; font-size: 12px;">💡 Conservez précieusement le <strong>NSI</strong> de votre enfant pour accéder à son dossier scolaire.</p>
             `;
 
             sendEmail(parent_email, subject, html)
@@ -179,7 +184,7 @@ router.post('/', authenticateToken, authorizeRole(['admin']), upload.single('pho
             parent_id,
             parent_email,
             matricule,
-            nni,
+            nsi,
             cycle,
             niveau,
             serie,
@@ -223,9 +228,9 @@ router.put('/:id', authenticateToken, authorizeRole(['admin']), upload.single('p
 
         await db.query(`
             UPDATE students 
-            SET name = $1, class_id = $2, nni = $3, cycle = $4, niveau = $5, serie = $6, parent_email = $7, photo_url = $8
-            WHERE id = $9 AND school_id = $10
-        `, [name, class_id || 1, nni, cycle, niveau, serie || null, parent_email, photo_url, studentId, school_id]);
+            SET name = $1, class_id = $2, cycle = $3, niveau = $4, serie = $5, parent_email = $6, photo_url = $7
+            WHERE id = $8 AND school_id = $9
+        `, [name, class_id || 1, cycle, niveau, serie || null, parent_email, photo_url, studentId, school_id]);
 
         console.log(`[StudentUpdate] ✅ Success. Student Updated.`);
         res.json({ success: true, message: 'Élève mis à jour avec succès', photo_url });

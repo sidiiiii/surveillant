@@ -120,7 +120,7 @@ const VideoAdModal = ({ page }) => {
                     {!videoEnded && (
                         <div className="absolute bottom-4 left-4 right-4 flex justify-between items-center pointer-events-none">
                             <span className="bg-black/40 backdrop-blur-md text-[10px] text-white/70 px-3 py-1 rounded-full border border-white/10 uppercase tracking-widest font-bold">
-                                Publicité • Surveilleur
+                                Publicité • Surveillant
                             </span>
                         </div>
                     )}

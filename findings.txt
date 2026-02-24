@@ -1,0 +1,4 @@
+﻿C:\Users\sidy\Desktop\School\client\node_modules\autoprefixer\lib\hacks\image-rendering.js
+C:\Users\sidy\Desktop\School\client\node_modules\caniuse-lite\data\features\css-font-rendering-controls.js
+C:\Users\sidy\Desktop\School\client\node_modules\caniuse-lite\data\features\link-rel-prerender.js
+C:\Users\sidy\Desktop\School\VERCEL_CONFIG.md
