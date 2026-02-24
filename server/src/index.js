@@ -1,34 +1,25 @@
 const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
+const path = require('path');
+const fs = require('fs');
 
 dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+const IS_PRODUCTION = process.env.NODE_ENV === 'production';
 
-
-const path = require('path');
-
-// CORS Configuration for Production
 // Smart CORS Configuration
 const corsOptions = {
     origin: function (origin, callback) {
-        // Allow requests with no origin (like mobile apps or curl requests)
         if (!origin) return callback(null, true);
-
-        // Allow localhost for development
         if (origin.includes('localhost')) return callback(null, true);
-
-        // Allow any Vercel deployment
         if (origin.endsWith('.vercel.app')) return callback(null, true);
-
-        // Allow the specific FRONTEND_URL if set
+        if (origin.includes('surveillant.it.com')) return callback(null, true);
         if (process.env.FRONTEND_URL && origin === process.env.FRONTEND_URL) {
             return callback(null, true);
         }
-
-        // Block others by default (or allow if you want to be very permissive: callback(null, true))
         console.log('CORS Blocked:', origin);
         callback(new Error('Not allowed by CORS'));
     },
@@ -39,8 +30,8 @@ const corsOptions = {
 app.use(cors(corsOptions));
 app.use(express.json());
 app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
-app.get('/logo.jpeg', (req, res) => res.sendFile(path.resolve(__dirname, '../../Surveilleur.jpeg')));
 
+// API Routes
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/students', require('./routes/students'));
 app.use('/api/students', require('./routes/documents'));
@@ -54,10 +45,20 @@ app.use('/api/public', require('./routes/public'));
 app.use('/api/superadmin', require('./routes/superadmin'));
 app.use('/api/analysis', require('./routes/analysis'));
 
-app.get('/', (req, res) => {
-    res.send('School Tracking Platform API');
-});
+// Serve built React frontend in production
+const frontendBuildPath = path.join(process.cwd(), 'public');
+if (IS_PRODUCTION && fs.existsSync(frontendBuildPath)) {
+    app.use(express.static(frontendBuildPath));
+    // Catch-all: serve index.html for React Router
+    app.get('*', (req, res) => {
+        res.sendFile(path.join(frontendBuildPath, 'index.html'));
+    });
+} else {
+    app.get('/', (req, res) => {
+        res.send('School Tracking Platform API - Running in development mode');
+    });
+}
 
-app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
+app.listen(PORT, '0.0.0.0', () => {
+    console.log(`Server running on port ${PORT} (${IS_PRODUCTION ? 'production' : 'development'})`);
 });
