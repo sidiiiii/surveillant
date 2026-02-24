@@ -8,9 +8,13 @@ const isProduction = process.env.NODE_ENV === 'production';
 // or set a local DATABASE_URL in .env
 const connectionString = process.env.DATABASE_URL;
 
+// Coolify internal databases don't use SSL.
+// Only enable SSL if the URL explicitly requires it (e.g. external Supabase/Render).
+const useSSL = connectionString && connectionString.includes('sslmode=require');
+
 const pool = new Pool({
   connectionString: connectionString,
-  ssl: isProduction ? { rejectUnauthorized: false } : false,
+  ssl: useSSL ? { rejectUnauthorized: false } : false,
 });
 
 const createTables = async () => {
