@@ -189,24 +189,6 @@ const AdminDashboard = () => {
 
 
 
-    const markAttendance = async (studentId, status) => {
-        const token = localStorage.getItem('token');
-        try {
-            await axios.post(`${API_URL}/attendance`, {
-                student_id: studentId,
-                date: new Date().toISOString().split('T')[0],
-                status
-            }, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            alert(`Marked ${status} for student ${studentId}`);
-        } catch (error) {
-            console.error('Attendance Error:', error);
-            console.error('Error Response:', error.response?.data);
-            alert('Error marking attendance: ' + (error.response?.data?.error || error.message));
-        }
-    };
-
     const user = JSON.parse(localStorage.getItem('user') || '{}');
 
     return (

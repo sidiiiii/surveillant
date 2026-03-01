@@ -244,33 +244,60 @@ router.put('/:id', authenticateToken, authorizeRole(['admin']), upload.single('p
 router.delete('/:id', authenticateToken, authorizeRole(['admin']), async (req, res) => {
     const studentId = req.params.id;
     const school_id = req.user.school_id;
+    const path = require('path');
+    const fs = require('fs');
 
     console.log(`[StudentDelete] Attempting to delete student ${studentId} for school ${school_id}`);
 
     const client = await db.pool.connect();
 
     try {
-        // Verify student belongs to school
-        const { rows: studentRows } = await client.query('SELECT id FROM students WHERE id = $1 AND school_id = $2', [studentId, school_id]);
+        // 1. Verify student belongs to school and get photo/docs info
+        const { rows: studentRows } = await client.query('SELECT id, photo_url, nsi FROM students WHERE id = $1 AND school_id = $2', [studentId, school_id]);
         const student = studentRows[0];
         if (!student) {
             console.log(`[StudentDelete] ❌ Student not found or not in school`);
             return res.status(404).json({ error: 'Élève non trouvé' });
         }
 
-        // Use transaction to delete student and their data (grades, attendance)
+        const studentNSI = student.nsi;
+
+        // 2. Get all documents to delete physical files
+        const { rows: docRows } = await client.query('SELECT file_url FROM student_documents WHERE student_id = $1', [studentId]);
+
+        // Start Transaction
         await client.query('BEGIN');
 
+        // Delete physical photo
+        if (student.photo_url) {
+            const photoPath = path.join(__dirname, '../..', student.photo_url);
+            if (fs.existsSync(photoPath)) {
+                fs.unlinkSync(photoPath);
+                console.log(`[StudentDelete] Deleted student photo: ${photoPath}`);
+            }
+        }
+
+        // Delete physical documents
+        docRows.forEach(doc => {
+            const docPath = path.join(__dirname, '../..', doc.file_url);
+            if (fs.existsSync(docPath)) {
+                fs.unlinkSync(docPath);
+                console.log(`[StudentDelete] Deleted document file: ${docPath}`);
+            }
+        });
+
+        // Delete DB records (Cascade handles some, but we do others manually for safety)
+        const docsRes = await client.query('DELETE FROM student_documents WHERE student_id = $1', [studentId]);
         const gradesRes = await client.query('DELETE FROM grades WHERE student_id = $1', [studentId]);
         const attendanceRes = await client.query('DELETE FROM attendance WHERE student_id = $1', [studentId]);
         const studentRes = await client.query('DELETE FROM students WHERE id = $1 AND school_id = $2', [studentId, school_id]);
 
-        console.log(`[StudentDelete] Deleted student and related records (Grades: ${gradesRes.rowCount}, Attendance: ${attendanceRes.rowCount})`);
+        console.log(`[StudentDelete] Deleted student ${studentNSI} and related records (Grades: ${gradesRes.rowCount}, Attendance: ${attendanceRes.rowCount}, Docs: ${docsRes.rowCount})`);
 
         await client.query('COMMIT');
 
         console.log(`[StudentDelete] ✅ Success`);
-        res.json({ success: true, message: 'Élève supprimé avec succès' });
+        res.json({ success: true, message: 'Élève et toutes ses données (incluant NSI et fichiers) supprimés avec succès' });
     } catch (error) {
         await client.query('ROLLBACK');
         console.error(`[StudentDelete] ❌ Error:`, error.message);
