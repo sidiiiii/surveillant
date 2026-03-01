@@ -3,10 +3,11 @@ const router = express.Router();
 const db = require('../database');
 const { authenticateToken, authorizeRole } = require('../middleware/authMiddleware');
 const multer = require('multer');
+
 const path = require('path');
 const fs = require('fs');
 
-// Configure multer for document uploads
+// Configure multer for local document uploads
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
         const uploadDir = path.join(__dirname, '../../uploads/documents');
@@ -102,6 +103,7 @@ router.post('/:studentId/documents', authenticateToken, authorizeRole(['admin', 
         }
 
         const file_url = `/uploads/documents/${req.file.filename}`;
+
 
         const { rows: result } = await db.query(`
             INSERT INTO student_documents (student_id, type, file_url, description, created_at)

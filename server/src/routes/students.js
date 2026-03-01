@@ -4,6 +4,7 @@ const db = require('../database');
 const { authenticateToken, authorizeRole } = require('../middleware/authMiddleware');
 const upload = require('../middleware/uploadMiddleware');
 
+
 // Helper to generate a unique 5-digit NSI
 const generateUniqueNSI = async () => {
     while (true) {
@@ -91,6 +92,7 @@ router.post('/', authenticateToken, authorizeRole(['admin']), upload.single('pho
 
         // Get photo URL
         const photo_url = req.file ? `/uploads/students/${req.file.filename}` : null;
+
 
         // 1. Find or Create Parent
         let parent_id = null;
@@ -225,6 +227,7 @@ router.put('/:id', authenticateToken, authorizeRole(['admin']), upload.single('p
 
         // Get photo URL if uploaded, otherwise keep old one
         const photo_url = req.file ? `/uploads/students/${req.file.filename}` : student.photo_url;
+
 
         await db.query(`
             UPDATE students 
