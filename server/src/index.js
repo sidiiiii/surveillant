@@ -30,8 +30,22 @@ const corsOptions = {
 app.use(cors(corsOptions));
 app.use(express.json());
 
-const UPLOADS_PATH = path.join(process.cwd(), 'uploads');
-console.log(`[Storage] Uploads directory path: ${UPLOADS_PATH}`);
+// Normalize uploads path to be at project root, even if started from /server
+let baseDir = process.cwd();
+if (baseDir.endsWith('server')) {
+    baseDir = path.join(baseDir, '..');
+}
+const UPLOADS_PATH = path.join(baseDir, 'uploads');
+
+console.log(`[Storage] Base directory: ${baseDir}`);
+console.log(`[Storage] Uploads directory: ${UPLOADS_PATH}`);
+
+// Ensure the directory exists
+const fs = require('fs');
+if (!fs.existsSync(UPLOADS_PATH)) {
+    fs.mkdirSync(UPLOADS_PATH, { recursive: true });
+}
+
 app.use('/uploads', express.static(UPLOADS_PATH));
 
 // API Routes

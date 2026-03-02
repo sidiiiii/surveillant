@@ -10,7 +10,13 @@ const fs = require('fs');
 // Configure multer for local document uploads
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
-        const uploadDir = path.join(__dirname, '../../uploads/documents');
+        // Find project root
+        let baseDir = process.cwd();
+        if (baseDir.endsWith('server')) {
+            baseDir = path.join(baseDir, '..');
+        }
+        const uploadDir = path.join(baseDir, 'uploads/documents');
+
         if (!fs.existsSync(uploadDir)) {
             fs.mkdirSync(uploadDir, { recursive: true });
         }
@@ -146,7 +152,12 @@ router.delete('/:studentId/documents/:docId', authenticateToken, authorizeRole([
         }
 
         // Delete file from filesystem
-        const filePath = path.join(__dirname, '../..', document.file_url);
+        let baseDir = process.cwd();
+        if (baseDir.endsWith('server')) {
+            baseDir = path.join(baseDir, '..');
+        }
+        const filePath = path.join(baseDir, document.file_url);
+
         if (fs.existsSync(filePath)) {
             fs.unlinkSync(filePath);
         }

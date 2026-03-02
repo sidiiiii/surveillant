@@ -272,8 +272,15 @@ router.delete('/:id', authenticateToken, authorizeRole(['admin']), async (req, r
         await client.query('BEGIN');
 
         // Delete physical photo
+        // Helper to get absolute path from root
+        let baseDir = process.cwd();
+        if (baseDir.endsWith('server')) {
+            baseDir = path.join(baseDir, '..');
+        }
+
+        // Delete physical photo
         if (student.photo_url) {
-            const photoPath = path.join(__dirname, '../..', student.photo_url);
+            const photoPath = path.join(baseDir, student.photo_url);
             if (fs.existsSync(photoPath)) {
                 fs.unlinkSync(photoPath);
                 console.log(`[StudentDelete] Deleted student photo: ${photoPath}`);
@@ -282,7 +289,7 @@ router.delete('/:id', authenticateToken, authorizeRole(['admin']), async (req, r
 
         // Delete physical documents
         docRows.forEach(doc => {
-            const docPath = path.join(__dirname, '../..', doc.file_url);
+            const docPath = path.join(baseDir, doc.file_url);
             if (fs.existsSync(docPath)) {
                 fs.unlinkSync(docPath);
                 console.log(`[StudentDelete] Deleted document file: ${docPath}`);
