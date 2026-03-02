@@ -4,13 +4,9 @@ const fs = require('fs');
 
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
-        // Find project root (handle running from /app or /app/server)
-        let baseDir = process.cwd();
-        if (baseDir.endsWith('server')) {
-            baseDir = path.join(baseDir, '..');
-        }
-
-        let dest = path.join(baseDir, 'uploads');
+        // Find project root relative to this file (server/src/middleware)
+        // server/src/middleware -> going up 3 levels to reach the project root where 'uploads' is
+        let dest = path.resolve(__dirname, '../../../uploads');
 
         if (file.fieldname === 'logo') {
             dest = path.join(dest, 'schools');

@@ -30,22 +30,40 @@ const corsOptions = {
 app.use(cors(corsOptions));
 app.use(express.json());
 
-// Normalize uploads path to be at project root, even if started from /server
-let baseDir = process.cwd();
-if (baseDir.endsWith('server')) {
-    baseDir = path.join(baseDir, '..');
-}
-const UPLOADS_PATH = path.join(baseDir, 'uploads');
+// Absolute path to the uploads directory at the project root
+// __dirname is server/src, so we go up twice to reach the root
+const UPLOADS_PATH = path.resolve(__dirname, '../../uploads');
 
-console.log(`[Storage] Base directory: ${baseDir}`);
-console.log(`[Storage] Uploads directory: ${UPLOADS_PATH}`);
+console.log(`[Storage] Server Directory: ${__dirname}`);
+console.log(`[Storage] Target Uploads Path: ${UPLOADS_PATH}`);
 
 // Ensure the directory exists
 if (!fs.existsSync(UPLOADS_PATH)) {
+    console.log(`[Storage] Creating missing uploads directory at: ${UPLOADS_PATH}`);
     fs.mkdirSync(UPLOADS_PATH, { recursive: true });
 }
 
 app.use('/uploads', express.static(UPLOADS_PATH));
+
+// Diagnostic route to check if files are physically there
+app.get('/api/debug-storage', (req, res) => {
+    try {
+        const schools = fs.existsSync(path.join(UPLOADS_PATH, 'schools')) ? fs.readdirSync(path.join(UPLOADS_PATH, 'schools')) : [];
+        const students = fs.existsSync(path.join(UPLOADS_PATH, 'students')) ? fs.readdirSync(path.join(UPLOADS_PATH, 'students')) : [];
+        res.json({
+            path: UPLOADS_PATH,
+            exists: fs.existsSync(UPLOADS_PATH),
+            contents: {
+                schools: schools.length,
+                students: students.length,
+                school_files: schools,
+                student_files: students
+            }
+        });
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
 
 // API Routes
 app.use('/api/auth', require('./routes/auth'));
