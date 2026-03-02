@@ -29,7 +29,10 @@ const corsOptions = {
 
 app.use(cors(corsOptions));
 app.use(express.json());
-app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
+
+const UPLOADS_PATH = path.join(process.cwd(), 'uploads');
+console.log(`[Storage] Uploads directory path: ${UPLOADS_PATH}`);
+app.use('/uploads', express.static(UPLOADS_PATH));
 
 // API Routes
 app.use('/api/auth', require('./routes/auth'));
