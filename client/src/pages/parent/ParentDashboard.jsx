@@ -205,7 +205,7 @@ const ParentDashboard = () => {
                                 </div>
                             )}
                             <button
-                                onClick={() => window.open('https://wa.me/22238310476', '_blank')}
+                                onClick={() => window.open('https://wa.me/22249123906', '_blank')}
                                 title="Contacter le Support"
                                 className="p-2.5 rounded-xl bg-green-50 text-green-600 hover:bg-green-100 transition-all group"
                             >
