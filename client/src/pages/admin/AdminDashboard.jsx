@@ -234,15 +234,20 @@ const AdminDashboard = () => {
                                 <span className="text-xs font-bold text-gray-600 group-hover:text-green-600 hidden md:block uppercase tracking-wider">WhatsApp</span>
                             </button>
 
-                            <button onClick={() => navigate('/admin/settings')} className="flex items-center gap-2 group transition-all relative">
-                                <div className={`w-10 h-10 rounded-full border-2 ${!emailConfigured ? 'border-amber-500 animate-pulse' : 'border-blue-600'} flex items-center justify-center ${!emailConfigured ? 'text-amber-500' : 'text-blue-600'} group-hover:bg-blue-600 group-hover:text-white transition-all shadow-sm`}>
-                                    <Settings className="w-5 h-5" />
+                            <button onClick={() => navigate('/admin/settings')} className="flex items-center gap-3 group transition-all relative">
+                                <div className={`w-11 h-11 rounded-full border-2 ${!emailConfigured ? 'border-amber-500 bg-amber-50 shadow-[0_0_15px_rgba(245,158,11,0.5)] animate-pulse' : 'border-blue-600'} flex items-center justify-center ${!emailConfigured ? 'text-amber-600' : 'text-blue-600'} group-hover:bg-blue-600 group-hover:text-white transition-all shadow-sm`}>
+                                    <Settings className={`w-5 h-5 ${!emailConfigured ? 'animate-spin-slow' : ''}`} />
                                 </div>
-                                <div className="flex flex-col">
-                                    <span className="text-xs font-bold text-gray-600 group-hover:text-blue-600 hidden md:block uppercase tracking-wider">Paramètres</span>
-                                    {!emailConfigured && <span className="text-[9px] text-amber-600 font-bold hidden md:block whitespace-nowrap animate-bounce">Config. Email</span>}
+                                <div className="flex flex-col items-start">
+                                    <span className="text-xs font-black text-gray-700 group-hover:text-blue-600 hidden md:block uppercase tracking-wider">Paramètres</span>
+                                    {!emailConfigured && (
+                                        <div className="flex items-center gap-1.5 px-2.5 py-1 bg-amber-500 text-white rounded-full mt-1 shadow-[0_0_10px_rgba(245,158,11,0.4)] animate-bounce hidden md:flex">
+                                            <div className="w-1.5 h-1.5 bg-white rounded-full animate-ping"></div>
+                                            <span className="text-[10px] font-black uppercase tracking-tighter">Action Requise: SMTP</span>
+                                        </div>
+                                    )}
                                 </div>
-                                {!emailConfigured && <div className="absolute -top-1 right-0 w-3 h-3 bg-amber-500 border-2 border-white rounded-full"></div>}
+                                {!emailConfigured && <div className="absolute -top-1 -right-1 w-4 h-4 bg-amber-500 border-2 border-white rounded-full shadow-[0_0_10px_rgba(245,158,11,0.6)] animate-pulse md:hidden"></div>}
                             </button>
 
                             <button onClick={handleLogout} className="flex items-center justify-center w-10 h-10 rounded-full bg-gray-100 text-gray-500 hover:bg-red-50 hover:text-red-600 transition-all ml-4">
