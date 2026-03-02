@@ -41,7 +41,6 @@ console.log(`[Storage] Base directory: ${baseDir}`);
 console.log(`[Storage] Uploads directory: ${UPLOADS_PATH}`);
 
 // Ensure the directory exists
-const fs = require('fs');
 if (!fs.existsSync(UPLOADS_PATH)) {
     fs.mkdirSync(UPLOADS_PATH, { recursive: true });
 }
