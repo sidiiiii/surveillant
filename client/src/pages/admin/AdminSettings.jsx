@@ -27,8 +27,10 @@ const AdminSettings = () => {
 
     const [loading, setLoading] = useState(true);
     const [testing, setTesting] = useState(false);
+    const [savingSmtp, setSavingSmtp] = useState(false);
     const [savingProfile, setSavingProfile] = useState(false);
     const [schoolInfo, setSchoolInfo] = useState(null);
+    const [smtpMessage, setSmtpMessage] = useState(null); // { type: 'success'|'error', text: string }
 
     useEffect(() => {
         const fetchData = async () => {
@@ -81,6 +83,8 @@ const AdminSettings = () => {
     const handleSaveSMTP = async (e) => {
         e.preventDefault();
         const token = localStorage.getItem('token');
+        setSavingSmtp(true);
+        setSmtpMessage(null);
 
         const payload = { ...emailSettings };
         if (payload.smtp_pass === '********') {
@@ -93,9 +97,50 @@ const AdminSettings = () => {
             await axios.post(`${API_URL}/schools/email-settings`, payload, {
                 headers: { Authorization: `Bearer ${token}` }
             });
-            alert('Configuration SMTP sauvegardée !');
+            setSmtpMessage({ type: 'success', text: '✅ Configuration SMTP sauvegardée avec succès !' });
         } catch (error) {
-            alert('Erreur lors de la sauvegarde SMTP');
+            setSmtpMessage({ type: 'error', text: '❌ Erreur lors de la sauvegarde SMTP.' });
+        } finally {
+            setSavingSmtp(false);
+        }
+    };
+
+    const handleTestEmail = async () => {
+        const token = localStorage.getItem('token');
+        const user = JSON.parse(localStorage.getItem('user') || '{}');
+        const testEmail = user.email;
+
+        if (!testEmail) {
+            setSmtpMessage({ type: 'error', text: '❌ Aucun email de compte trouvé pour le test.' });
+            return;
+        }
+
+        if (!emailSettings.smtp_user) {
+            setSmtpMessage({ type: 'error', text: '❌ Veuillez d\'abord configurer et sauvegarder votre SMTP.' });
+            return;
+        }
+
+        setTesting(true);
+        setSmtpMessage(null);
+
+        const smtpPass = emailSettings.smtp_pass === '********' ? undefined : emailSettings.smtp_pass.replace(/\s/g, '');
+
+        try {
+            await axios.post(`${API_URL}/schools/test-email-config`, {
+                smtp_host: emailSettings.smtp_host,
+                smtp_port: emailSettings.smtp_port,
+                smtp_user: emailSettings.smtp_user,
+                smtp_pass: smtpPass,
+                test_email: testEmail
+            }, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            setSmtpMessage({ type: 'success', text: `✅ Email de test envoyé à ${testEmail} ! Vérifiez votre boîte de réception.` });
+        } catch (error) {
+            const errMsg = error.response?.data?.error || 'Connexion SMTP échouée';
+            setSmtpMessage({ type: 'error', text: `❌ Échec : ${errMsg}` });
+        } finally {
+            setTesting(false);
         }
     };
 
@@ -135,7 +180,7 @@ const AdminSettings = () => {
                 currentPassword: ''
             }));
 
-            alert('Profil mis à jour avec succès !');
+            alert('✅ Profil mis à jour avec succès !');
         } catch (error) {
             alert(error.response?.data?.error || 'Erreur lors de la mise à jour du profil');
         } finally {
@@ -250,12 +295,42 @@ const AdminSettings = () => {
                                     className="w-full p-2 bg-gray-50 border rounded-lg focus:ring-1 focus:ring-blue-400 outline-none text-sm"
                                 />
                             </div>
-                            <div className="md:col-span-2 flex justify-end">
+                            {/* Feedback message */}
+                            {smtpMessage && (
+                                <div className={`md:col-span-2 p-3 rounded-lg text-sm font-medium ${smtpMessage.type === 'success'
+                                        ? 'bg-green-50 text-green-800 border border-green-200'
+                                        : 'bg-red-50 text-red-800 border border-red-200'
+                                    }`}>
+                                    {smtpMessage.text}
+                                </div>
+                            )}
+
+                            <div className="md:col-span-2 flex justify-end gap-3">
+                                {/* Test button */}
+                                <button
+                                    type="button"
+                                    onClick={handleTestEmail}
+                                    disabled={testing || !emailSettings.smtp_user}
+                                    className="px-5 py-2 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 rounded-lg font-bold text-xs uppercase tracking-widest transition-all active:scale-95 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    {testing
+                                        ? <Loader className="w-3 h-3 animate-spin" />
+                                        : <Send className="w-3 h-3" />
+                                    }
+                                    {testing ? 'Envoi en cours...' : 'Tester l\'envoi'}
+                                </button>
+
+                                {/* Save button */}
                                 <button
                                     type="submit"
-                                    className="px-6 py-2 bg-gray-800 hover:bg-black text-white rounded-lg font-bold text-xs uppercase tracking-widest transition-all shadow-md active:scale-95 flex items-center gap-2"
+                                    disabled={savingSmtp}
+                                    className="px-6 py-2 bg-gray-800 hover:bg-black text-white rounded-lg font-bold text-xs uppercase tracking-widest transition-all shadow-md active:scale-95 flex items-center gap-2 disabled:opacity-50"
                                 >
-                                    <Save className="w-3 h-3" /> Sauvegarder SMTP
+                                    {savingSmtp
+                                        ? <Loader className="w-3 h-3 animate-spin" />
+                                        : <Save className="w-3 h-3" />
+                                    }
+                                    {savingSmtp ? 'Sauvegarde...' : 'Sauvegarder SMTP'}
                                 </button>
                             </div>
                         </form>
