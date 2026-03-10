@@ -7,13 +7,20 @@ const isSSLPort = (port) => parseInt(port) === 465;
 
 // Create reusable transporter object (fallback with .env credentials)
 const FALLBACK_PORT = parseInt(process.env.SMTP_PORT) || 587;
+
+// FORCED FALLBACK due to Coolify Env Var bug
+// If SMTP_PASS is somehow 'votre_mot_de_passe_application' (the example string stuck in Coolify), replace it with the real one
+const realPass = process.env.SMTP_PASS === 'votre_mot_de_passe_application'
+    ? 'czukaybhikwucpcr'
+    : process.env.SMTP_PASS;
+
 const transporter = nodemailer.createTransport({
     host: process.env.SMTP_HOST || 'smtp.gmail.com',
     port: FALLBACK_PORT,
     secure: isSSLPort(FALLBACK_PORT), // true for 465, false for 587
     auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS,
+        user: process.env.SMTP_USER || 'ssurveilleur@gmail.com',
+        pass: realPass,
     },
     tls: {
         rejectUnauthorized: false
@@ -44,10 +51,10 @@ async function sendEmail(to, subject, content, senderInfo = {}) {
     }
 
     let mailTransport = transporter;
-    let smtpUserUsed = process.env.SMTP_USER;
+    let smtpUserUsed = process.env.SMTP_USER || 'ssurveilleur@gmail.com';
 
-    if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
-        console.error('[EmailService] ❌ No SMTP credentials configured in .env. Cannot send email to:', to);
+    if (!smtpUserUsed || !realPass) {
+        console.error('[EmailService] ❌ No SMTP credentials configured. Cannot send email to:', to);
         throw new Error('No SMTP credentials configured');
     }
 
