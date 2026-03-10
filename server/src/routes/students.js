@@ -273,8 +273,9 @@ router.delete('/:id', authenticateToken, authorizeRole(['admin']), async (req, r
 
         // Delete physical photo
         // Delete physical files using absolute path resolved from this file root
-        // Default baseDir for uploads is root (../../ from server/src/routes)
-        const projectRoot = path.resolve(__dirname, '../../');
+        // In production (Coolify), we MUST use /app to match the persistent volume mounting point.
+        const IS_PRODUCTION = process.env.NODE_ENV === 'production';
+        const projectRoot = IS_PRODUCTION ? '/app' : path.resolve(__dirname, '../../');
 
         // Delete physical photo
         if (student.photo_url) {

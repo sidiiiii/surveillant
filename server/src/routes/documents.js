@@ -10,8 +10,11 @@ const fs = require('fs');
 // Configure multer for local document uploads
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
-        // Use process.cwd() to consistently find the 'uploads' directory
-        const uploadDir = path.join(process.cwd(), 'uploads/documents');
+        // In production (Coolify), we MUST use /app/uploads to match the persistent volume.
+        const IS_PRODUCTION = process.env.NODE_ENV === 'production';
+        const uploadDir = IS_PRODUCTION
+            ? '/app/uploads/documents'
+            : path.join(process.cwd(), 'uploads/documents');
 
         if (!fs.existsSync(uploadDir)) {
             fs.mkdirSync(uploadDir, { recursive: true });
@@ -149,8 +152,11 @@ router.delete('/:studentId/documents/:docId', authenticateToken, authorizeRole([
             return res.status(404).json({ error: 'Document non trouvé' });
         }
 
-        // Delete file from filesystem using absolute path resolved from this file
-        const filePath = path.resolve(__dirname, '../../', document.file_url.startsWith('/') ? document.file_url.substring(1) : document.file_url);
+        // Delete file from filesystem using absolute path. 
+        // In production (Coolify), we MUST use /app to match the persistent volume mounting point.
+        const IS_PRODUCTION = process.env.NODE_ENV === 'production';
+        const projectRoot = IS_PRODUCTION ? '/app' : path.resolve(__dirname, '../../');
+        const filePath = path.join(projectRoot, document.file_url.startsWith('/') ? document.file_url.substring(1) : document.file_url);
 
         if (fs.existsSync(filePath)) {
             fs.unlinkSync(filePath);

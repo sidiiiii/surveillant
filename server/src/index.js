@@ -30,8 +30,11 @@ const corsOptions = {
 app.use(cors(corsOptions));
 app.use(express.json());
 
-// Absolute path to the uploads directory at the project root
-const UPLOADS_PATH = path.join(process.cwd(), 'uploads');
+// Absolute path to the uploads directory. 
+// In production (Coolify), we MUST use /app/uploads to match the persistent volume.
+const UPLOADS_PATH = IS_PRODUCTION
+    ? '/app/uploads'
+    : path.join(process.cwd(), 'uploads');
 
 console.log(`[Storage] Server Directory: ${__dirname}`);
 console.log(`[Storage] Target Uploads Path: ${UPLOADS_PATH}`);

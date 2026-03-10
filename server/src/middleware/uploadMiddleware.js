@@ -4,8 +4,11 @@ const fs = require('fs');
 
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
-        // Use process.cwd() to consistently find the 'uploads' directory
-        let dest = path.join(process.cwd(), 'uploads');
+        // In production (Coolify), we MUST use /app/uploads to match the persistent volume.
+        const IS_PRODUCTION = process.env.NODE_ENV === 'production';
+        let dest = IS_PRODUCTION
+            ? '/app/uploads'
+            : path.join(process.cwd(), 'uploads');
 
         if (file.fieldname === 'logo') {
             dest = path.join(dest, 'schools');

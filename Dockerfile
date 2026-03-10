@@ -26,6 +26,7 @@ RUN npm install --omit=dev
 
 # Copy server source
 COPY server/ ./
+COPY Surveillant.jpeg ./
 
 # Copy built frontend into server's public folder
 # The server will serve the frontend statically
