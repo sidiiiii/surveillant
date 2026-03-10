@@ -64,12 +64,14 @@ router.post('/', authenticateToken, authorizeRole(['admin', 'teacher']), async (
                         <p>مرحباً،</p>
                         <p>لقد تم تسجيل الطالب <strong>${student.name}</strong> كـ <strong>غائب${timeRangeAr}</strong> في تاريخ ${date}.</p>
                         <p>يرجى التواصل مع المدرسة في أقرب وقت ممكن.</p>
+                        <p>للمزيد من التفاصيل، يرجى تسجيل الدخول: <a href="https://surveillant.it.com">https://surveillant.it.com</a></p>
                     `,
                     fr: `
                         <h3 style="color: #ef4444;">⚠️ Alerte d'Absence</h3>
                         <p>Bonjour,</p>
                         <p>Votre enfant <strong>${student.name}</strong> a été marqué <strong>ABSENT${timeRangeFr}</strong> le ${date}.</p>
                         <p>Merci de contacter l'établissement dans les plus brefs délais.</p>
+                        <p>Pour plus de détails, connectez-vous : <a href="https://surveillant.it.com">https://surveillant.it.com</a></p>
                     `
                 };
 

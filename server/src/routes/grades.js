@@ -113,7 +113,7 @@ router.post('/', authenticateToken, authorizeRole(['admin', 'teacher']), async (
                             <p><strong>النوع:</strong> ${typeLabel}</p>
                             <p><strong>الدرجة:</strong> <span style="font-size: 24px; font-weight: bold; color: ${grade >= 10 ? '#10b981' : '#ef4444'};">${grade}/20</span></p>
                             ${comment ? `<p><strong>ملاحظة:</strong> ${comment}</p>` : ''}
-                            <p>يرجى تسجيل الدخول إلى حسابكم للمزيد من التفاصيل.</p>
+                            <p>يرجى تسجيل الدخول إلى حسابكم للمزيد من التفاصيل عبر الرابط التالي: <a href="https://surveillant.it.com">https://surveillant.it.com</a></p>
                         `,
                         fr: `
                             <h3 style="color: #4f46e5;">📚 Nouvelle Note Enregistrée</h3>
@@ -122,7 +122,7 @@ router.post('/', authenticateToken, authorizeRole(['admin', 'teacher']), async (
                             <p><strong>Type:</strong> ${typeLabel}</p>
                             <p><strong>Note:</strong> <span style="font-size: 24px; font-weight: bold; color: ${grade >= 10 ? '#10b981' : '#ef4444'};">${grade}/20</span></p>
                             ${comment ? `<p><strong>Commentaire:</strong> ${comment}</p>` : ''}
-                            <p>Connectez-vous à votre compte parent pour voir tous les détails.</p>
+                            <p>Connectez-vous à votre compte parent pour voir tous les détails : <a href="https://surveillant.it.com">https://surveillant.it.com</a></p>
                         `
                     };
 
