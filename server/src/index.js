@@ -31,8 +31,7 @@ app.use(cors(corsOptions));
 app.use(express.json());
 
 // Absolute path to the uploads directory at the project root
-// __dirname is server/src, so we go up twice to reach the root
-const UPLOADS_PATH = path.resolve(__dirname, '../../uploads');
+const UPLOADS_PATH = path.join(process.cwd(), 'uploads');
 
 console.log(`[Storage] Server Directory: ${__dirname}`);
 console.log(`[Storage] Target Uploads Path: ${UPLOADS_PATH}`);

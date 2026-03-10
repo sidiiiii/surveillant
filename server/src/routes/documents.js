@@ -10,9 +10,8 @@ const fs = require('fs');
 // Configure multer for local document uploads
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
-        // Find project root relative to this file (server/src/routes)
-        // server/src/routes -> going up 2 levels to reach the project root where 'uploads' is
-        const uploadDir = path.resolve(__dirname, '../../uploads/documents');
+        // Use process.cwd() to consistently find the 'uploads' directory
+        const uploadDir = path.join(process.cwd(), 'uploads/documents');
 
         if (!fs.existsSync(uploadDir)) {
             fs.mkdirSync(uploadDir, { recursive: true });
@@ -21,8 +20,9 @@ const storage = multer.diskStorage({
     },
     filename: (req, file, cb) => {
         const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-        const ext = path.extname(file.originalname).toLowerCase().replace(/[^.a-z0-9]/g, '');
-        cb(null, 'doc-' + uniqueSuffix + (ext || '.jpg'));
+        let ext = path.extname(file.originalname).toLowerCase().replace(/[^.a-z0-9]/g, '');
+        if (!ext) ext = '.jpg';
+        cb(null, 'doc-' + uniqueSuffix + ext);
     }
 });
 

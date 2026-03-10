@@ -4,9 +4,8 @@ const fs = require('fs');
 
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
-        // Find project root relative to this file (server/src/middleware)
-        // server/src/middleware -> going up 3 levels to reach the project root where 'uploads' is
-        let dest = path.resolve(__dirname, '../../../uploads');
+        // Use process.cwd() to consistently find the 'uploads' directory
+        let dest = path.join(process.cwd(), 'uploads');
 
         if (file.fieldname === 'logo') {
             dest = path.join(dest, 'schools');
@@ -21,9 +20,14 @@ const storage = multer.diskStorage({
     },
     filename: (req, file, cb) => {
         const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-        // Ensure the extension is clean (no spaces or weird characters from mobile phones)
-        const ext = path.extname(file.originalname).toLowerCase().replace(/[^.a-z0-9]/g, '');
-        cb(null, file.fieldname + '-' + uniqueSuffix + (ext || '.jpg'));
+        // Get original extension
+        let ext = path.extname(file.originalname).toLowerCase();
+        // Clean it (keep only dot and alphanumeric)
+        ext = ext.replace(/[^.a-z0-9]/g, '');
+        // Default to .jpg if missing
+        if (!ext) ext = '.jpg';
+
+        cb(null, file.fieldname + '-' + uniqueSuffix + ext);
     }
 });
 
