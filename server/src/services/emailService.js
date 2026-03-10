@@ -2,11 +2,15 @@ const nodemailer = require('nodemailer');
 const dotenv = require('dotenv');
 dotenv.config();
 
+// Detect if port uses SSL (465) or TLS (587)
+const isSSLPort = (port) => parseInt(port) === 465;
+
 // Create reusable transporter object (fallback with .env credentials)
+const FALLBACK_PORT = parseInt(process.env.SMTP_PORT) || 587;
 const transporter = nodemailer.createTransport({
     host: process.env.SMTP_HOST || 'smtp.gmail.com',
-    port: parseInt(process.env.SMTP_PORT) || 587,
-    secure: false,
+    port: FALLBACK_PORT,
+    secure: isSSLPort(FALLBACK_PORT), // true for 465, false for 587
     auth: {
         user: process.env.SMTP_USER,
         pass: process.env.SMTP_PASS,
@@ -40,37 +44,11 @@ async function sendEmail(to, subject, content, senderInfo = {}) {
     }
 
     let mailTransport = transporter;
-    let useCustomSMTP = false;
     let smtpUserUsed = process.env.SMTP_USER;
 
-    if (senderInfo.smtp_user && senderInfo.smtp_pass) {
-        useCustomSMTP = true;
-        smtpUserUsed = senderInfo.smtp_user;
-        try {
-            mailTransport = nodemailer.createTransport({
-                host: senderInfo.smtp_host || 'smtp.gmail.com',
-                port: parseInt(senderInfo.smtp_port) || 587,
-                secure: false,
-                auth: {
-                    user: senderInfo.smtp_user,
-                    pass: senderInfo.smtp_pass,
-                },
-                tls: {
-                    rejectUnauthorized: false
-                }
-            });
-        } catch (err) {
-            console.error('[EmailService] Failed to create custom transport', err);
-            useCustomSMTP = false;
-            smtpUserUsed = process.env.SMTP_USER;
-        }
-    } else {
-        // No school SMTP configured - using .env fallback
-        if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
-            console.error('[EmailService] ❌ No SMTP credentials configured (neither school nor .env). Cannot send email to:', to);
-            throw new Error('No SMTP credentials configured');
-        }
-        console.log('[EmailService] Using fallback .env SMTP credentials (school has no SMTP configured).');
+    if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
+        console.error('[EmailService] ❌ No SMTP credentials configured in .env. Cannot send email to:', to);
+        throw new Error('No SMTP credentials configured');
     }
 
     console.log(`[EmailService] Sending email to: ${to} | Subject: "${subject}" | SMTP: ${smtpUserUsed}`);
@@ -117,7 +95,7 @@ async function sendEmail(to, subject, content, senderInfo = {}) {
 
     try {
         const fromName = senderInfo.name || "Surveillant";
-        const fromAddress = useCustomSMTP ? senderInfo.smtp_user : process.env.SMTP_USER;
+        const fromAddress = process.env.SMTP_USER;
 
         const mailOptions = {
             from: `"${fromName}" <${fromAddress}>`,
@@ -135,7 +113,7 @@ async function sendEmail(to, subject, content, senderInfo = {}) {
             }];
         }
 
-        if (senderInfo.email && !useCustomSMTP) {
+        if (senderInfo.email) {
             mailOptions.replyTo = senderInfo.email;
         }
 
@@ -143,7 +121,7 @@ async function sendEmail(to, subject, content, senderInfo = {}) {
         console.log(`[EmailService] ✅ Email sent successfully! MessageId: ${info.messageId} | To: ${to}`);
     } catch (error) {
         console.error(`[EmailService] ❌ Failed to send email to ${to}:`, error.message);
-        console.error('[EmailService] SMTP details - Host:', senderInfo.smtp_host || process.env.SMTP_HOST, '| User:', smtpUserUsed);
+        console.error('[EmailService] SMTP details - Host:', process.env.SMTP_HOST, '| User:', smtpUserUsed);
         if (error.code === 'EAUTH') {
             console.error('[EmailService] 🔑 AUTHENTICATION ERROR: The App Password may be expired or revoked. Please generate a new Gmail App Password.');
         }

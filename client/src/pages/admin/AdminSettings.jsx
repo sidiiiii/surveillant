@@ -8,14 +8,6 @@ import { ArrowLeft, Save, Mail, Send, Loader, LayoutDashboard, User, Lock, Shiel
 const AdminSettings = () => {
     const navigate = useNavigate();
 
-    // SMTP Settings State
-    const [emailSettings, setEmailSettings] = useState({
-        smtp_host: 'smtp.gmail.com',
-        smtp_port: 587,
-        smtp_user: '',
-        smtp_pass: ''
-    });
-
     // Account Settings State
     const [profileData, setProfileData] = useState({
         email: '',
@@ -26,11 +18,8 @@ const AdminSettings = () => {
     });
 
     const [loading, setLoading] = useState(true);
-    const [testing, setTesting] = useState(false);
-    const [savingSmtp, setSavingSmtp] = useState(false);
     const [savingProfile, setSavingProfile] = useState(false);
     const [schoolInfo, setSchoolInfo] = useState(null);
-    const [smtpMessage, setSmtpMessage] = useState(null); // { type: 'success'|'error', text: string }
 
     useEffect(() => {
         const fetchData = async () => {
@@ -44,19 +33,6 @@ const AdminSettings = () => {
             }));
 
             try {
-                // Fetch SMTP settings
-                const res = await axios.get(`${API_URL}/schools/email-settings`, {
-                    headers: { Authorization: `Bearer ${token}` }
-                });
-                if (res.data) {
-                    setEmailSettings({
-                        smtp_host: res.data.smtp_host || 'smtp.gmail.com',
-                        smtp_port: res.data.smtp_port || 587,
-                        smtp_user: res.data.smtp_user || '',
-                        smtp_pass: res.data.has_password ? '********' : ''
-                    });
-                }
-
                 // Fetch School Info
                 const schoolRes = await axios.get(`${API_URL}/schools/my-school`, {
                     headers: { Authorization: `Bearer ${token}` }
@@ -72,76 +48,8 @@ const AdminSettings = () => {
         fetchData();
     }, []);
 
-    const handleChange = (e) => {
-        setEmailSettings({ ...emailSettings, [e.target.name]: e.target.value });
-    };
-
     const handleProfileChange = (e) => {
         setProfileData({ ...profileData, [e.target.name]: e.target.value });
-    };
-
-    const handleSaveSMTP = async (e) => {
-        e.preventDefault();
-        const token = localStorage.getItem('token');
-        setSavingSmtp(true);
-        setSmtpMessage(null);
-
-        const payload = { ...emailSettings };
-        if (payload.smtp_pass === '********') {
-            delete payload.smtp_pass;
-        } else {
-            payload.smtp_pass = payload.smtp_pass.replace(/\s/g, '');
-        }
-
-        try {
-            await axios.post(`${API_URL}/schools/email-settings`, payload, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            setSmtpMessage({ type: 'success', text: '✅ Configuration SMTP sauvegardée avec succès !' });
-        } catch (error) {
-            setSmtpMessage({ type: 'error', text: '❌ Erreur lors de la sauvegarde SMTP.' });
-        } finally {
-            setSavingSmtp(false);
-        }
-    };
-
-    const handleTestEmail = async () => {
-        const token = localStorage.getItem('token');
-        const user = JSON.parse(localStorage.getItem('user') || '{}');
-        const testEmail = user.email;
-
-        if (!testEmail) {
-            setSmtpMessage({ type: 'error', text: '❌ Aucun email de compte trouvé pour le test.' });
-            return;
-        }
-
-        if (!emailSettings.smtp_user) {
-            setSmtpMessage({ type: 'error', text: '❌ Veuillez d\'abord configurer et sauvegarder votre SMTP.' });
-            return;
-        }
-
-        setTesting(true);
-        setSmtpMessage(null);
-
-        const smtpPass = emailSettings.smtp_pass === '********' ? undefined : emailSettings.smtp_pass.replace(/\s/g, '');
-
-        try {
-            await axios.post(`${API_URL}/schools/test-email-config`, {
-                smtp_host: emailSettings.smtp_host,
-                smtp_port: emailSettings.smtp_port,
-                smtp_user: emailSettings.smtp_user,
-                smtp_pass: smtpPass,
-                test_email: testEmail
-            }, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            setSmtpMessage({ type: 'success', text: `✅ Email de test envoyé à ${testEmail} ! Vérifiez votre boîte de réception.` });
-        } catch (error) {
-            const errMsg = error.response?.data?.error || 'Connexion SMTP échouée';
-            setSmtpMessage({ type: 'error', text: `❌ Échec : ${errMsg}` });
-        } finally {
-            setTesting(false);
-        }
     };
 
     const handleUpdateProfile = async (e) => {
@@ -238,104 +146,6 @@ const AdminSettings = () => {
                         </button >
                     </div >
                 )}
-
-                {/* SMTP Configuration Section (Originally Main Section) */}
-                <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-                    <div className="bg-gray-800 px-6 py-4 flex items-center gap-3">
-                        <Mail className="text-white w-6 h-6" />
-                        <h2 className="text-lg font-bold text-white uppercase tracking-wider">Configuration Email (SMTP)</h2>
-                    </div>
-
-                    <div className="p-6 space-y-6">
-                        <div className="bg-blue-50 border-l-4 border-blue-400 p-4 rounded-r-xl">
-                            <h3 className="text-sm font-bold text-blue-800 flex items-center gap-2 italic">
-                                💡 Guide Rapide Gmail
-                            </h3>
-                            <p className="text-xs text-blue-700 mt-2 leading-relaxed">
-                                1. Activez la <strong>Validation en 2 étapes</strong> sur Google.<br />
-                                2. Créez un <strong>Mot de passe d'application</strong> (16 caractères).<br />
-                                3. Copiez ce mot de passe ci-dessous.
-                            </p>
-                            <div className="mt-3 flex gap-3">
-                                <a href="https://myaccount.google.com/apppasswords" target="_blank" rel="noopener noreferrer" className="text-[10px] font-black uppercase text-blue-600 hover:underline">Accéder à Google App Passwords →</a>
-                            </div>
-                        </div>
-
-                        <form onSubmit={handleSaveSMTP} className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div className="space-y-1">
-                                <label className="text-xs font-bold text-gray-500 uppercase">Serveur SMTP</label>
-                                <input
-                                    type="text" name="smtp_host"
-                                    value={emailSettings.smtp_host} onChange={handleChange}
-                                    className="w-full p-2 bg-gray-50 border rounded-lg focus:ring-1 focus:ring-blue-400 outline-none text-sm"
-                                />
-                            </div>
-                            <div className="space-y-1">
-                                <label className="text-xs font-bold text-gray-500 uppercase">Port</label>
-                                <input
-                                    type="number" name="smtp_port"
-                                    value={emailSettings.smtp_port} onChange={handleChange}
-                                    className="w-full p-2 bg-gray-50 border rounded-lg focus:ring-1 focus:ring-blue-400 outline-none text-sm"
-                                />
-                            </div>
-                            <div className="md:col-span-2 space-y-1">
-                                <label className="text-xs font-bold text-gray-500 uppercase">Utilisateur SMTP (Gmail)</label>
-                                <input
-                                    type="email" name="smtp_user"
-                                    value={emailSettings.smtp_user} onChange={handleChange}
-                                    className="w-full p-2 bg-gray-50 border rounded-lg focus:ring-1 focus:ring-blue-400 outline-none text-sm"
-                                />
-                            </div>
-                            <div className="md:col-span-2 space-y-1">
-                                <label className="text-xs font-bold text-gray-500 uppercase">Mot de Passe d'Application</label>
-                                <input
-                                    type="password" name="smtp_pass"
-                                    value={emailSettings.smtp_pass} onChange={handleChange}
-                                    placeholder="Ex: abcd efgh ijkl mnop"
-                                    className="w-full p-2 bg-gray-50 border rounded-lg focus:ring-1 focus:ring-blue-400 outline-none text-sm"
-                                />
-                            </div>
-                            {/* Feedback message */}
-                            {smtpMessage && (
-                                <div className={`md:col-span-2 p-3 rounded-lg text-sm font-medium ${smtpMessage.type === 'success'
-                                        ? 'bg-green-50 text-green-800 border border-green-200'
-                                        : 'bg-red-50 text-red-800 border border-red-200'
-                                    }`}>
-                                    {smtpMessage.text}
-                                </div>
-                            )}
-
-                            <div className="md:col-span-2 flex justify-end gap-3">
-                                {/* Test button */}
-                                <button
-                                    type="button"
-                                    onClick={handleTestEmail}
-                                    disabled={testing || !emailSettings.smtp_user}
-                                    className="px-5 py-2 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 rounded-lg font-bold text-xs uppercase tracking-widest transition-all active:scale-95 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                                >
-                                    {testing
-                                        ? <Loader className="w-3 h-3 animate-spin" />
-                                        : <Send className="w-3 h-3" />
-                                    }
-                                    {testing ? 'Envoi en cours...' : 'Tester l\'envoi'}
-                                </button>
-
-                                {/* Save button */}
-                                <button
-                                    type="submit"
-                                    disabled={savingSmtp}
-                                    className="px-6 py-2 bg-gray-800 hover:bg-black text-white rounded-lg font-bold text-xs uppercase tracking-widest transition-all shadow-md active:scale-95 flex items-center gap-2 disabled:opacity-50"
-                                >
-                                    {savingSmtp
-                                        ? <Loader className="w-3 h-3 animate-spin" />
-                                        : <Save className="w-3 h-3" />
-                                    }
-                                    {savingSmtp ? 'Sauvegarde...' : 'Sauvegarder SMTP'}
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
 
                 {/* Account Credentials Section */}
                 <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
