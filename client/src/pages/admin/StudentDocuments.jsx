@@ -21,6 +21,8 @@ const StudentDocuments = () => {
     const [gradeComment, setGradeComment] = useState('');
     const [isGradeFormOpen, setIsGradeFormOpen] = useState(false);
     const [schoolInfo, setSchoolInfo] = useState(null);
+    const [isUploading, setIsUploading] = useState(false);
+    const [isSubmittingGrade, setIsSubmittingGrade] = useState(false);
 
     useEffect(() => {
         fetchStudentData();
@@ -128,6 +130,8 @@ const StudentDocuments = () => {
             alert('Veuillez sélectionner un fichier');
             return;
         }
+        if (isUploading) return;
+        setIsUploading(true);
 
         try {
             const token = localStorage.getItem('token');
@@ -150,6 +154,8 @@ const StudentDocuments = () => {
         } catch (error) {
             console.error('Error uploading document:', error);
             alert('Erreur lors du téléchargement');
+        } finally {
+            setIsUploading(false);
         }
     };
 
@@ -171,6 +177,8 @@ const StudentDocuments = () => {
 
     const handleAddGrade = async (e) => {
         e.preventDefault();
+        if (isSubmittingGrade) return;
+        setIsSubmittingGrade(true);
         const token = localStorage.getItem('token');
         try {
             await axios.post(`${API_URL}/grades`, {
@@ -191,6 +199,8 @@ const StudentDocuments = () => {
         } catch (error) {
             console.error('Error adding grade:', error);
             alert('Erreur lors de l\'ajout de la note');
+        } finally {
+            setIsSubmittingGrade(false);
         }
     };
 
@@ -386,14 +396,14 @@ const StudentDocuments = () => {
                                 <div className="flex justify-end pt-2">
                                     <button
                                         type="submit"
-                                        disabled={schoolInfo?.status === 'suspended'}
-                                        className={`px-8 py-2.5 text-white rounded-lg font-bold shadow-md transition-all flex items-center justify-center gap-2 ${schoolInfo?.status === 'suspended'
-                                            ? 'bg-gray-400 cursor-not-allowed opacity-70'
-                                            : 'bg-green-600 hover:bg-green-700'
+                                        disabled={schoolInfo?.status === 'suspended' || isSubmittingGrade}
+                                        className={`px-8 py-2.5 text-white rounded-lg font-bold shadow-md transition-all flex items-center justify-center gap-2 ${schoolInfo?.status === 'suspended' || isSubmittingGrade
+                                                ? 'bg-gray-400 cursor-not-allowed opacity-70'
+                                                : 'bg-green-600 hover:bg-green-700'
                                             }`}
                                     >
                                         <ClipboardList className="w-5 h-5" />
-                                        {schoolInfo?.status === 'suspended' ? 'Action Restreinte' : 'Enregistrer la Note'}
+                                        {schoolInfo?.status === 'suspended' ? 'Action Restreinte' : (isSubmittingGrade ? 'Enregistrement...' : 'Enregistrer la Note')}
                                     </button>
                                 </div>
                             </form>
@@ -600,14 +610,14 @@ const StudentDocuments = () => {
                         </div>
                         <button
                             type="submit"
-                            disabled={schoolInfo?.status === 'suspended'}
-                            className={`w-full md:w-auto px-6 py-2 text-white rounded font-medium flex items-center justify-center gap-2 transition-all ${schoolInfo?.status === 'suspended'
-                                ? 'bg-gray-400 cursor-not-allowed'
-                                : 'bg-blue-600 hover:bg-blue-700'
+                            disabled={schoolInfo?.status === 'suspended' || isUploading}
+                            className={`w-full md:w-auto px-6 py-2 text-white rounded font-medium flex items-center justify-center gap-2 transition-all ${schoolInfo?.status === 'suspended' || isUploading
+                                    ? 'bg-gray-400 cursor-not-allowed'
+                                    : 'bg-blue-600 hover:bg-blue-700'
                                 }`}
                         >
                             <Upload className="w-4 h-4" />
-                            {schoolInfo?.status === 'suspended' ? 'Action Restreinte' : 'Télécharger'}
+                            {schoolInfo?.status === 'suspended' ? 'Action Restreinte' : (isUploading ? 'Téléchargement...' : 'Télécharger')}
                         </button>
                     </form>
                 </div>

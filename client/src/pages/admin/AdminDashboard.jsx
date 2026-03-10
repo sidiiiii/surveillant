@@ -20,6 +20,7 @@ const AdminDashboard = () => {
     const [classList, setClassList] = useState([]);
     const [selectedClassId, setSelectedClassId] = useState('');
     const [schoolInfo, setSchoolInfo] = useState(null);
+    const [submitting, setSubmitting] = useState(false);
 
     // Search & Filter State
     const [searchTerm, setSearchTerm] = useState('');
@@ -97,6 +98,8 @@ const AdminDashboard = () => {
 
     const handleAddStudent = async (e) => {
         e.preventDefault();
+        if (submitting) return;
+        setSubmitting(true);
         try {
             const token = localStorage.getItem('token');
             const selectedClass = classList.find(c => c.id == selectedClassId);
@@ -128,6 +131,8 @@ const AdminDashboard = () => {
         } catch (error) {
             console.error(error);
             alert(error.response?.data?.error || 'Erreur lors de l\'ajout de l\'élève');
+        } finally {
+            setSubmitting(false);
         }
     };
 
@@ -384,13 +389,13 @@ const AdminDashboard = () => {
                             </div>
                             <button
                                 type="submit"
-                                disabled={schoolInfo?.status === 'suspended'}
-                                className={`md:col-span-2 px-4 py-2 text-white rounded font-bold tracking-wide transition-all ${schoolInfo?.status === 'suspended'
-                                    ? 'bg-gray-400 cursor-not-allowed opacity-50'
-                                    : 'bg-blue-600 hover:bg-blue-700'
+                                disabled={schoolInfo?.status === 'suspended' || submitting}
+                                className={`md:col-span-2 px-4 py-2 text-white rounded font-bold tracking-wide transition-all ${schoolInfo?.status === 'suspended' || submitting
+                                        ? 'bg-gray-400 cursor-not-allowed opacity-50'
+                                        : 'bg-blue-600 hover:bg-blue-700'
                                     }`}
                             >
-                                {schoolInfo?.status === 'suspended' ? 'Modification Impossible' : "Ajouter l'Élève"}
+                                {schoolInfo?.status === 'suspended' ? 'Modification Impossible' : (submitting ? 'Ajout en cours...' : "Ajouter l'Élève")}
                             </button>
                         </form>
                     </div>
